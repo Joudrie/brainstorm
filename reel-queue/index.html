@@ -1,0 +1,260 @@
+<title>Vice City Reel Queue</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one narrow column, a sticky progress header, then a queue of reel rows with big thumb-sized buttons. */
+:root {
+  --bg: #f6f4f8;
+  --surface: #ffffff;
+  --fg: #1d1a24;
+  --muted: #6c6578;
+  --line: #e3dfe9;
+  --accent: #d4247a;      /* Vice pink */
+  --accent-fg: #ffffff;
+  --teal: #0b8f8a;        /* posted */
+  --teal-soft: #dcf2f0;
+  --amber: #a86300;       /* copied, not posted yet */
+  --amber-soft: #fbeed8;
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #15121b; --surface: #1f1b27; --fg: #f1edf6; --muted: #a39cb0; --line: #332d3e;
+  --accent: #ff4fa3; --accent-fg: #1a0b13; --teal: #3fd3c9; --teal-soft: #12322f;
+  --amber: #f2b15a; --amber-soft: #3a2a12; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #15121b; --surface: #1f1b27; --fg: #f1edf6; --muted: #a39cb0; --line: #332d3e;
+  --accent: #ff4fa3; --accent-fg: #1a0b13; --teal: #3fd3c9; --teal-soft: #12322f;
+  --amber: #f2b15a; --amber-soft: #3a2a12; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.wrap { max-width: 640px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px; }
+
+header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 18px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: 1.45rem; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+.sub { color: var(--muted); font-size: 0.85rem; margin: 0; }
+.progress { display: flex; align-items: center; gap: 10px; font-variant-numeric: tabular-nums; font-size: 0.85rem; color: var(--muted); }
+.bar { flex: 1; height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--teal); transition: width .3s; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.tab { font: 500 0.85rem var(--font-body); border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 6px 12px; border-radius: 99px; cursor: pointer; }
+.tab[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+
+main { display: grid; gap: 10px; padding-top: 14px; }
+.day { font: 600 0.72rem var(--font-body); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 12px 0 2px; }
+.reel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 10px; }
+.reel.posted { opacity: 0.62; }
+.top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.num { font: 700 1.05rem var(--font-display); width: 2.2ch; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); flex: none; }
+.code { font: 500 0.9rem var(--font-mono); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.code a { color: inherit; text-decoration: none; }
+.code a:hover { text-decoration: underline; }
+.pill { font: 600 0.7rem var(--font-body); letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 8px; border-radius: 99px; flex: none; }
+.pill.todo { background: var(--line); color: var(--muted); }
+.pill.copied { background: var(--amber-soft); color: var(--amber); }
+.pill.posted { background: var(--teal-soft); color: var(--teal); }
+.actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.btn { font: 600 0.9rem var(--font-body); min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 10px; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.btn.done { background: var(--teal); color: var(--surface); border-color: var(--teal); }
+.btn[aria-disabled="true"] { opacity: 0.45; pointer-events: none; }
+.btn:focus-visible, .tab:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.file { font-size: 0.8rem; color: var(--muted); }
+.file video { width: 100%; max-height: 360px; border-radius: 8px; background: #000; margin-top: 6px; }
+
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-top: 18px; }
+summary { font: 600 0.95rem var(--font-display); cursor: pointer; }
+details .body { display: grid; gap: 10px; padding-top: 10px; }
+textarea, input[type=text] { width: 100%; font: 0.85rem var(--font-mono); background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+textarea { min-height: 120px; resize: vertical; }
+.hint { color: var(--muted); font-size: 0.8rem; margin: 0; }
+.empty { text-align: center; color: var(--muted); padding: 32px 8px; }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); font-weight: 600; font-size: 0.85rem; padding: 10px 16px; border-radius: 99px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20; }
+.toast.show { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .bar > i, .toast { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Vice City Reel Queue</h1>
+      <p class="sub">Copy, download, post, then tap Posted. Saved across your phone and computer.</p>
+    </div>
+    <div class="progress"><div class="bar"><i id="barFill"></i></div><span id="count">Loading…</span></div>
+    <div class="tabs" role="group" aria-label="Filter">
+      <button class="tab" id="tab-todo" data-f="todo" aria-pressed="true">To post</button>
+      <button class="tab" id="tab-posted" data-f="posted" aria-pressed="false">Posted</button>
+      <button class="tab" id="tab-all" data-f="all" aria-pressed="false">All</button>
+    </div>
+  </header>
+
+  <main id="list"><p class="empty" id="emptyMsg">Loading your reels…</p></main>
+
+  <details id="addBox">
+    <summary>Add more reels</summary>
+    <div class="body">
+      <p class="hint">Paste Muse's whole message. Every Instagram reel link in it gets added; ones already in the queue are skipped.</p>
+      <textarea id="pasteIn" placeholder="https://www.instagram.com/reel/…"></textarea>
+      <button class="btn primary" id="addBtn">Add reels</button>
+    </div>
+  </details>
+
+  <details id="setBox">
+    <summary>Downloader site</summary>
+    <div class="body">
+      <p class="hint">Put the downloader's address here with <code>{url}</code> where the reel link goes. Example: <code>https://example-downloader.com/?url={url}</code>. If the site has no such address, leave it as just the site and the Download button will copy the link and open the site so you can paste.</p>
+      <input type="text" id="dlTemplate" placeholder="https://…{url}">
+      <button class="btn" id="saveDl">Save downloader</button>
+    </div>
+  </details>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  let reels = [];          // {id, url, n, day, status, fileUrl}
+  let filter = "todo";
+  let dlTemplate = "";
+  let db = null;
+  const $ = (id) => document.getElementById(id);
+
+  function toast(msg) {
+    const t = $("toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toast._h); toast._h = setTimeout(() => t.classList.remove("show"), 1600);
+  }
+
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch (e) {
+      const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta);
+      ta.select(); let ok = false; try { ok = document.execCommand("copy"); } catch (_) {}
+      ta.remove(); return ok;
+    }
+  }
+
+  function safeHttps(u) { return typeof u === "string" && (u.startsWith("https://") || u.startsWith("/_blob/")) ? u : null; }
+
+  function setStatus(r, status) {
+    r.status = status; render();
+    if (db) db.collection("reels").doc(r.id).update({ status, updatedAt: Date.now() })
+      .catch(() => toast("Couldn't save. Check your connection."));
+  }
+
+  function downloadHref(url) {
+    if (!dlTemplate || !dlTemplate.startsWith("https://")) return null;
+    return dlTemplate.includes("{url}") ? dlTemplate.replace("{url}", encodeURIComponent(url)) : dlTemplate;
+  }
+
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+  function render() {
+    const posted = reels.filter(r => r.status === "posted").length;
+    $("count").textContent = reels.length ? `${posted} / ${reels.length} posted` : "No reels yet";
+    $("barFill").style.width = reels.length ? (100 * posted / reels.length) + "%" : "0";
+    document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.f === filter)));
+
+    const list = $("list"); list.textContent = "";
+    const shown = reels.filter(r => filter === "all" || (filter === "posted" ? r.status === "posted" : r.status !== "posted"));
+    if (!shown.length) {
+      list.appendChild(el("p", "empty", reels.length
+        ? (filter === "todo" ? "All caught up. Paste a new batch below." : "Nothing posted yet.")
+        : "No reels yet. Paste Muse's list under Add more reels."));
+      return;
+    }
+    let lastDay = null;
+    for (const r of shown) {
+      if (r.day && r.day !== lastDay) { list.appendChild(el("div", "day", r.day)); lastDay = r.day; }
+      const card = el("div", "reel" + (r.status === "posted" ? " posted" : ""));
+      const top = el("div", "top");
+      top.appendChild(el("span", "num", String(r.n)));
+      const code = el("span", "code"); const a = el("a", null, r.id);
+      a.href = safeHttps(r.url) || "#"; a.target = "_blank"; a.rel = "noopener"; code.appendChild(a);
+      top.appendChild(code);
+      const st = r.status || "todo";
+      top.appendChild(el("span", "pill " + st, st === "todo" ? "To do" : st === "copied" ? "Copied" : "Posted"));
+      card.appendChild(top);
+
+      const acts = el("div", "actions");
+      const copyB = el("button", "btn", st === "todo" ? "Copy" : "Copy again");
+      copyB.onclick = async () => {
+        const ok = await copyText(r.url);
+        toast(ok ? "Link copied" : "Copy blocked. Long-press the code to copy.");
+        if (ok && r.status !== "posted") setStatus(r, "copied");
+      };
+      const dl = el("a", "btn primary", "Download");
+      const href = downloadHref(r.url);
+      dl.target = "_blank"; dl.rel = "noopener";
+      if (href) {
+        dl.href = href;
+        dl.onclick = () => { copyText(r.url); if (r.status === "todo") setStatus(r, "copied"); };
+      } else {
+        dl.href = "#"; dl.onclick = (e) => { e.preventDefault(); $("setBox").open = true; $("dlTemplate").focus(); toast("Add your downloader site first"); };
+      }
+      const postB = el("button", "btn" + (st === "posted" ? " done" : ""), st === "posted" ? "Posted ✓" : "Posted");
+      postB.onclick = () => { setStatus(r, r.status === "posted" ? "copied" : "posted"); toast(r.status === "posted" ? `#${r.n} marked posted` : `#${r.n} back in the queue`); };
+      acts.append(copyB, dl, postB);
+      card.appendChild(acts);
+
+      const fu = safeHttps(r.fileUrl);
+      if (fu) {
+        const f = el("div", "file", "Video file ready. Long-press or use the menu on the video to save it.");
+        const v = document.createElement("video"); v.src = fu; v.controls = true; v.preload = "metadata"; v.playsInline = true;
+        f.appendChild(v); card.appendChild(f);
+      }
+      list.appendChild(card);
+    }
+  }
+
+  document.querySelectorAll(".tab").forEach(b => b.onclick = () => { filter = b.dataset.f; render(); });
+
+  $("addBtn").onclick = async () => {
+    const text = $("pasteIn").value;
+    const ids = [...text.matchAll(/instagram\.com\/(?:reel|reels|p)\/([A-Za-z0-9_-]+)/g)].map(m => m[1]);
+    const have = new Set(reels.map(r => r.id));
+    const fresh = [...new Set(ids)].filter(id => !have.has(id));
+    if (!ids.length) { toast("No reel links found in that text"); return; }
+    if (!fresh.length) { toast("All of those are already in the queue"); return; }
+    if (!db) { toast("Can't save right now. Try reopening the page."); return; }
+    let n = reels.reduce((m, r) => Math.max(m, r.n || 0), 0);
+    const day = "Added " + new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    try {
+      for (const id of fresh) {
+        n += 1;
+        await db.collection("reels").doc(id).set({ url: `https://www.instagram.com/reel/${id}/`, n, day, status: "todo", addedAt: Date.now() });
+      }
+      $("pasteIn").value = ""; filter = "todo";
+      toast(`Added ${fresh.length} reel${fresh.length === 1 ? "" : "s"}`);
+    } catch (e) { toast("Couldn't save those. Try again."); }
+  };
+
+  $("saveDl").onclick = async () => {
+    const v = $("dlTemplate").value.trim();
+    if (v && !v.startsWith("https://")) { toast("The address must start with https://"); return; }
+    dlTemplate = v; render();
+    if (db) db.doc("settings/main").set({ downloader: v }).then(() => toast("Downloader saved"), () => toast("Couldn't save the downloader"));
+  };
+
+  async function start() {
+    db = await claude.use("db");
+    if (!db) { $("count").textContent = "Offline"; $("list").textContent = ""; $("list").appendChild(el("p", "empty", "Sign in to claude.ai to see and update your queue.")); return; }
+    const timer = setTimeout(() => { if (!reels.length) { $("list").textContent = ""; $("list").appendChild(el("p", "empty", "Still loading. Check your connection.")); } }, 10000);
+    db.collection("reels").onSnapshot(snap => {
+      clearTimeout(timer);
+      reels = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.n || 0) - (b.n || 0));
+      render();
+    }, () => { clearTimeout(timer); toast("Couldn't load reels"); });
+    db.doc("settings/main").onSnapshot(s => {
+      const d = s.exists ? s.data() : null;
+      dlTemplate = (d && typeof d.downloader === "string") ? d.downloader : "";
+      if (document.activeElement !== $("dlTemplate")) $("dlTemplate").value = dlTemplate;
+      render();
+    });
+  }
+  if (window.claude && claude.use) start(); else { $("count").textContent = "Offline"; }
+})();
+</script>
