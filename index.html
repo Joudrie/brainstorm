@@ -1,8 +1,9 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Vice City Reel Queue</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
+
 /* Layout: one narrow column, a sticky progress header, then a queue of reel rows with big thumb-sized buttons. */
 :root {
   --bg: #f6f4f8;
@@ -30,7 +31,7 @@
   --amber: #f2b15a; --amber-soft: #3a2a12; color-scheme: dark; }
 
 * { box-sizing: border-box; }
-body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+html, body { margin: 0; } body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
 .wrap { max-width: 640px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px; }
 
@@ -77,13 +78,14 @@ textarea { min-height: 120px; resize: vertical; }
 .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); font-weight: 600; font-size: 0.85rem; padding: 10px 16px; border-radius: 99px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20; }
 .toast.show { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .bar > i, .toast { transition: none; } }
-</style>
+</style></head><body>
+
 
 <div class="wrap">
   <header>
     <div>
       <h1>Vice City Reel Queue</h1>
-      <p class="sub">Copy, download, post, then tap Posted. Saved across your phone and computer.</p>
+      <p class="sub">Copy, download, post, then tap Posted. Progress is saved on this device.</p>
     </div>
     <div class="progress"><div class="bar"><i id="barFill"></i></div><span id="count">Loading…</span></div>
     <div class="tabs" role="group" aria-label="Filter">
@@ -98,7 +100,7 @@ textarea { min-height: 120px; resize: vertical; }
   <details id="addBox">
     <summary>Add more reels</summary>
     <div class="body">
-      <p class="hint">Paste Muse's whole message. Every Instagram reel link in it gets added; ones already in the queue are skipped.</p>
+      <p class="hint">Paste Muse's whole message. New reel links are added on this device. To add them for good (and get them downloaded), run <code>scripts/add_reels.py</code> or send the list to Claude.</p>
       <textarea id="pasteIn" placeholder="https://www.instagram.com/reel/…"></textarea>
       <button class="btn primary" id="addBtn">Add reels</button>
     </div>
@@ -117,17 +119,18 @@ textarea { min-height: 120px; resize: vertical; }
 
 <script>
 (() => {
-  let reels = [];          // {id, url, n, day, status, fileUrl}
+  const KEY = "reelQueue.v1";
+  let reels = [];      // from reels.json + local extras
+  let local = { status: {}, extra: [], downloader: "" };
   let filter = "todo";
-  let dlTemplate = "";
-  let db = null;
   const $ = (id) => document.getElementById(id);
+  try { Object.assign(local, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (_) {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(local)); } catch (_) {} };
 
   function toast(msg) {
     const t = $("toast"); t.textContent = msg; t.classList.add("show");
     clearTimeout(toast._h); toast._h = setTimeout(() => t.classList.remove("show"), 1600);
   }
-
   async function copyText(text) {
     try { await navigator.clipboard.writeText(text); return true; }
     catch (e) {
@@ -136,46 +139,35 @@ textarea { min-height: 120px; resize: vertical; }
       ta.remove(); return ok;
     }
   }
-
-  function safeHttps(u) { return typeof u === "string" && (u.startsWith("https://") || u.startsWith("/_blob/")) ? u : null; }
-
-  function setStatus(r, status) {
-    r.status = status; render();
-    if (db) db.collection("reels").doc(r.id).update({ status, updatedAt: Date.now() })
-      .catch(() => toast("Couldn't save. Check your connection."));
-  }
-
+  const statusOf = (r) => r.posted ? "posted" : (local.status[r.id] || "todo");
+  function setStatus(r, st) { local.status[r.id] = st; if (st !== "posted") r.posted = false; save(); render(); }
   function downloadHref(url) {
-    if (!dlTemplate || !dlTemplate.startsWith("https://")) return null;
-    return dlTemplate.includes("{url}") ? dlTemplate.replace("{url}", encodeURIComponent(url)) : dlTemplate;
+    const t = local.downloader;
+    if (!t || !t.startsWith("https://")) return null;
+    return t.includes("{url}") ? t.replace("{url}", encodeURIComponent(url)) : t;
   }
-
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 
   function render() {
-    const posted = reels.filter(r => r.status === "posted").length;
+    const posted = reels.filter(r => statusOf(r) === "posted").length;
     $("count").textContent = reels.length ? `${posted} / ${reels.length} posted` : "No reels yet";
     $("barFill").style.width = reels.length ? (100 * posted / reels.length) + "%" : "0";
     document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.f === filter)));
-
     const list = $("list"); list.textContent = "";
-    const shown = reels.filter(r => filter === "all" || (filter === "posted" ? r.status === "posted" : r.status !== "posted"));
+    const shown = reels.filter(r => filter === "all" || (filter === "posted" ? statusOf(r) === "posted" : statusOf(r) !== "posted"));
     if (!shown.length) {
-      list.appendChild(el("p", "empty", reels.length
-        ? (filter === "todo" ? "All caught up. Paste a new batch below." : "Nothing posted yet.")
-        : "No reels yet. Paste Muse's list under Add more reels."));
+      list.appendChild(el("p", "empty", reels.length ? (filter === "todo" ? "All caught up. Paste a new batch below." : "Nothing posted yet.") : "No reels yet."));
       return;
     }
     let lastDay = null;
     for (const r of shown) {
       if (r.day && r.day !== lastDay) { list.appendChild(el("div", "day", r.day)); lastDay = r.day; }
-      const card = el("div", "reel" + (r.status === "posted" ? " posted" : ""));
+      const st = statusOf(r);
+      const card = el("div", "reel" + (st === "posted" ? " posted" : ""));
       const top = el("div", "top");
       top.appendChild(el("span", "num", String(r.n)));
       const code = el("span", "code"); const a = el("a", null, r.id);
-      a.href = safeHttps(r.url) || "#"; a.target = "_blank"; a.rel = "noopener"; code.appendChild(a);
-      top.appendChild(code);
-      const st = r.status || "todo";
+      a.href = r.url; a.target = "_blank"; a.rel = "noopener"; code.appendChild(a); top.appendChild(code);
       top.appendChild(el("span", "pill " + st, st === "todo" ? "To do" : st === "copied" ? "Copied" : "Posted"));
       card.appendChild(top);
 
@@ -184,77 +176,54 @@ textarea { min-height: 120px; resize: vertical; }
       copyB.onclick = async () => {
         const ok = await copyText(r.url);
         toast(ok ? "Link copied" : "Copy blocked. Long-press the code to copy.");
-        if (ok && r.status !== "posted") setStatus(r, "copied");
+        if (ok && st !== "posted") setStatus(r, "copied");
       };
-      const dl = el("a", "btn primary", "Download");
-      const href = downloadHref(r.url);
-      dl.target = "_blank"; dl.rel = "noopener";
-      if (href) {
-        dl.href = href;
-        dl.onclick = () => { copyText(r.url); if (r.status === "todo") setStatus(r, "copied"); };
+      let dl;
+      if (r.file) {
+        dl = el("a", "btn primary", "Save video"); dl.href = r.file; dl.setAttribute("download", r.id + ".mp4");
       } else {
-        dl.href = "#"; dl.onclick = (e) => { e.preventDefault(); $("setBox").open = true; $("dlTemplate").focus(); toast("Add your downloader site first"); };
+        dl = el("a", "btn primary", "Download"); dl.target = "_blank"; dl.rel = "noopener";
+        const href = downloadHref(r.url);
+        if (href) { dl.href = href; dl.onclick = () => { copyText(r.url); if (st === "todo") setStatus(r, "copied"); }; }
+        else { dl.href = "#"; dl.onclick = (e) => { e.preventDefault(); $("setBox").open = true; $("dlTemplate").focus(); toast("Add your downloader site first"); }; }
       }
       const postB = el("button", "btn" + (st === "posted" ? " done" : ""), st === "posted" ? "Posted ✓" : "Posted");
-      postB.onclick = () => { setStatus(r, r.status === "posted" ? "copied" : "posted"); toast(r.status === "posted" ? `#${r.n} marked posted` : `#${r.n} back in the queue`); };
-      acts.append(copyB, dl, postB);
-      card.appendChild(acts);
-
-      const fu = safeHttps(r.fileUrl);
-      if (fu) {
-        const f = el("div", "file", "Video file ready. Long-press or use the menu on the video to save it.");
-        const v = document.createElement("video"); v.src = fu; v.controls = true; v.preload = "metadata"; v.playsInline = true;
-        f.appendChild(v); card.appendChild(f);
+      postB.onclick = () => { const now = statusOf(r) === "posted" ? "copied" : "posted"; setStatus(r, now); toast(now === "posted" ? `#${r.n} marked posted` : `#${r.n} back in the queue`); };
+      acts.append(copyB, dl, postB); card.appendChild(acts);
+      if (r.file) {
+        const f = el("div", "file"); const v = document.createElement("video");
+        v.src = r.file; v.controls = true; v.preload = "metadata"; v.playsInline = true; f.appendChild(v); card.appendChild(f);
       }
       list.appendChild(card);
     }
   }
 
   document.querySelectorAll(".tab").forEach(b => b.onclick = () => { filter = b.dataset.f; render(); });
-
-  $("addBtn").onclick = async () => {
-    const text = $("pasteIn").value;
-    const ids = [...text.matchAll(/instagram\.com\/(?:reel|reels|p)\/([A-Za-z0-9_-]+)/g)].map(m => m[1]);
+  $("addBtn").onclick = () => {
+    const ids = [...$("pasteIn").value.matchAll(/instagram\.com\/(?:reel|reels|p)\/([A-Za-z0-9_-]+)/g)].map(m => m[1]);
     const have = new Set(reels.map(r => r.id));
     const fresh = [...new Set(ids)].filter(id => !have.has(id));
-    if (!ids.length) { toast("No reel links found in that text"); return; }
-    if (!fresh.length) { toast("All of those are already in the queue"); return; }
-    if (!db) { toast("Can't save right now. Try reopening the page."); return; }
+    if (!ids.length) return toast("No reel links found in that text");
+    if (!fresh.length) return toast("All of those are already in the queue");
     let n = reels.reduce((m, r) => Math.max(m, r.n || 0), 0);
     const day = "Added " + new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" });
-    try {
-      for (const id of fresh) {
-        n += 1;
-        await db.collection("reels").doc(id).set({ url: `https://www.instagram.com/reel/${id}/`, n, day, status: "todo", addedAt: Date.now() });
-      }
-      $("pasteIn").value = ""; filter = "todo";
-      toast(`Added ${fresh.length} reel${fresh.length === 1 ? "" : "s"}`);
-    } catch (e) { toast("Couldn't save those. Try again."); }
+    for (const id of fresh) { const r = { n: ++n, id, url: `https://www.instagram.com/reel/${id}/`, day, posted: false, file: null }; local.extra.push(r); reels.push(r); }
+    save(); $("pasteIn").value = ""; filter = "todo"; render();
+    toast(`Added ${fresh.length} reel${fresh.length === 1 ? "" : "s"}`);
   };
-
-  $("saveDl").onclick = async () => {
+  $("saveDl").onclick = () => {
     const v = $("dlTemplate").value.trim();
-    if (v && !v.startsWith("https://")) { toast("The address must start with https://"); return; }
-    dlTemplate = v; render();
-    if (db) db.doc("settings/main").set({ downloader: v }).then(() => toast("Downloader saved"), () => toast("Couldn't save the downloader"));
+    if (v && !v.startsWith("https://")) return toast("The address must start with https://");
+    local.downloader = v; save(); render(); toast("Downloader saved");
   };
+  $("dlTemplate").value = local.downloader || "";
 
-  async function start() {
-    db = await claude.use("db");
-    if (!db) { $("count").textContent = "Offline"; $("list").textContent = ""; $("list").appendChild(el("p", "empty", "Sign in to claude.ai to see and update your queue.")); return; }
-    const timer = setTimeout(() => { if (!reels.length) { $("list").textContent = ""; $("list").appendChild(el("p", "empty", "Still loading. Check your connection.")); } }, 10000);
-    db.collection("reels").onSnapshot(snap => {
-      clearTimeout(timer);
-      reels = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.n || 0) - (b.n || 0));
-      render();
-    }, () => { clearTimeout(timer); toast("Couldn't load reels"); });
-    db.doc("settings/main").onSnapshot(s => {
-      const d = s.exists ? s.data() : null;
-      dlTemplate = (d && typeof d.downloader === "string") ? d.downloader : "";
-      if (document.activeElement !== $("dlTemplate")) $("dlTemplate").value = dlTemplate;
-      render();
-    });
-  }
-  if (window.claude && claude.use) start(); else { $("count").textContent = "Offline"; }
+  fetch("reels.json", { cache: "no-store" }).then(r => r.json()).then(base => {
+    const ids = new Set(base.map(r => r.id));
+    local.extra = local.extra.filter(r => !ids.has(r.id));   // once a reel is in reels.json, drop the local copy
+    save();
+    reels = base.concat(local.extra).sort((a, b) => a.n - b.n);
+    render();
+  }).catch(() => { $("count").textContent = "Couldn't load reels.json"; $("list").textContent = ""; $("list").appendChild(el("p", "empty", "Open this page through a web server (GitHub Pages, or python3 -m http.server) so it can read reels.json.")); });
 })();
-</script>
+</script></body></html>
