@@ -33,7 +33,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; } body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
-.wrap { max-width: 640px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px; }
+.wrap { max-width: 920px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px; }
 
 header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 18px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
 h1 { font-family: var(--font-display); font-weight: 700; font-size: 1.45rem; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
@@ -47,7 +47,10 @@ h1 { font-family: var(--font-display); font-weight: 700; font-size: 1.45rem; mar
 
 main { display: grid; gap: 10px; padding-top: 14px; }
 .day { font: 600 0.72rem var(--font-body); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 12px 0 2px; }
-.reel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 10px; }
+.reel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 12px; grid-template-columns: 1fr; align-items: start; }
+.reel .side { display: grid; gap: 10px; min-width: 0; }
+.preview { width: 100%; max-width: 340px; height: 470px; border: 0; border-radius: 8px; background: var(--bg); justify-self: center; }
+@media (min-width: 720px) { .reel { grid-template-columns: 340px 1fr; } .preview { justify-self: start; } }
 .reel.posted { opacity: 0.62; }
 .top { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .num { font: 700 1.05rem var(--font-display); width: 2.2ch; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); flex: none; }
@@ -123,6 +126,7 @@ textarea { min-height: 120px; resize: vertical; }
   let reels = [];      // from reels.json + local extras
   let local = { status: {}, extra: [], downloader: "" };
   let filter = "todo";
+  const previews = new Map();   // keep embeds loaded across re-renders
   const $ = (id) => document.getElementById(id);
   try { Object.assign(local, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (_) {}
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(local)); } catch (_) {} };
@@ -164,12 +168,22 @@ textarea { min-height: 120px; resize: vertical; }
       if (r.day && r.day !== lastDay) { list.appendChild(el("div", "day", r.day)); lastDay = r.day; }
       const st = statusOf(r);
       const card = el("div", "reel" + (st === "posted" ? " posted" : ""));
+      let pv = previews.get(r.id);
+      if (!pv) {
+        pv = document.createElement("iframe");
+        pv.className = "preview"; pv.loading = "lazy"; pv.title = "Preview of reel " + r.n;
+        pv.src = `https://www.instagram.com/reel/${encodeURIComponent(r.id)}/embed/captioned/`;
+        pv.setAttribute("scrolling", "no"); pv.setAttribute("allowtransparency", "true");
+        previews.set(r.id, pv);
+      }
+      card.appendChild(pv);
+      const side = el("div", "side"); card.appendChild(side);
       const top = el("div", "top");
       top.appendChild(el("span", "num", String(r.n)));
       const code = el("span", "code"); const a = el("a", null, r.id);
       a.href = r.url; a.target = "_blank"; a.rel = "noopener"; code.appendChild(a); top.appendChild(code);
       top.appendChild(el("span", "pill " + st, st === "todo" ? "To do" : st === "copied" ? "Copied" : "Posted"));
-      card.appendChild(top);
+      side.appendChild(top);
 
       const acts = el("div", "actions");
       const copyB = el("button", "btn", st === "todo" ? "Copy" : "Copy again");
@@ -189,10 +203,10 @@ textarea { min-height: 120px; resize: vertical; }
       }
       const postB = el("button", "btn" + (st === "posted" ? " done" : ""), st === "posted" ? "Posted ✓" : "Posted");
       postB.onclick = () => { const now = statusOf(r) === "posted" ? "copied" : "posted"; setStatus(r, now); toast(now === "posted" ? `#${r.n} marked posted` : `#${r.n} back in the queue`); };
-      acts.append(copyB, dl, postB); card.appendChild(acts);
+      acts.append(copyB, dl, postB); side.appendChild(acts);
       if (r.file) {
         const f = el("div", "file"); const v = document.createElement("video");
-        v.src = r.file; v.controls = true; v.preload = "metadata"; v.playsInline = true; f.appendChild(v); card.appendChild(f);
+        v.src = r.file; v.controls = true; v.preload = "metadata"; v.playsInline = true; f.appendChild(v); side.appendChild(f);
       }
       list.appendChild(card);
     }
