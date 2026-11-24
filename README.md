@@ -9,7 +9,9 @@ A queue for reposting reels from the VICE CITY TOP CLIPS chat to the secondary a
 Each reel has three buttons:
 - **Copy**: copies the Instagram link.
 - **Save video** (once the video is in `videos/`) or **Download** (opens your downloader site with the link filled in; set the site under "Downloader site").
-- **Posted**: marks it done. Progress is kept in that browser.
+- **Check off**: opens the shared Google Sheet on that reel's row. Tick the box there. The sheet is the permanent record, so every device and helper sees the same checkmarks.
+
+Shared sheet: https://docs.google.com/spreadsheets/d/19SF_3lNtmRRNqh2UCR45i4oW102ulEhaHyp540BOyhc/edit (must be shared as "Anyone with the link: Viewer" so the site can read it). If the site can't reach the sheet, it falls back to saving checkmarks in the browser.
 
 To view it, turn on GitHub Pages (Settings → Pages → deploy from this branch) or run `python3 -m http.server` in the repo and open http://localhost:8000.
 
@@ -18,7 +20,7 @@ To view it, turn on GitHub Pages (Settings → Pages → deploy from this branch
 ```
 python3 scripts/add_reels.py "Nov 25" < muse_message.txt
 ```
-Paste Muse's whole message; duplicates are skipped. You can also paste it on the page, but that only saves on that device.
+Paste Muse's whole message; duplicates are skipped. New reels also need a row in the shared sheet (Posted unchecked, #, Day, Reel link). You can also paste it on the page, but that only saves on that device.
 
 ## Downloading the videos
 

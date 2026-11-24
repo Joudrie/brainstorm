@@ -38,6 +38,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 18px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
 h1 { font-family: var(--font-display); font-weight: 700; font-size: 1.45rem; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
 .sub { color: var(--muted); font-size: 0.85rem; margin: 0; }
+.sub a, .linkbtn { color: var(--accent); font: inherit; font-weight: 600; background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
 .progress { display: flex; align-items: center; gap: 10px; font-variant-numeric: tabular-nums; font-size: 0.85rem; color: var(--muted); }
 .bar { flex: 1; height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
 .bar > i { display: block; height: 100%; width: 0; background: var(--teal); transition: width .3s; }
@@ -88,7 +89,7 @@ textarea { min-height: 120px; resize: vertical; }
   <header>
     <div>
       <h1>Vice City Reel Queue</h1>
-      <p class="sub">Copy, download, post, then tap Posted. Progress is saved on this device.</p>
+      <p class="sub">Copy, download, post, then check it off. <span id="syncNote">Loading checkmarks…</span> <a href="https://docs.google.com/spreadsheets/d/19SF_3lNtmRRNqh2UCR45i4oW102ulEhaHyp540BOyhc/edit" target="_blank" rel="noopener">Open sheet</a> · <button class="linkbtn" id="refreshBtn" type="button">Refresh</button></p>
     </div>
     <div class="progress"><div class="bar"><i id="barFill"></i></div><span id="count">Loading…</span></div>
     <div class="tabs" role="group" aria-label="Filter">
@@ -127,6 +128,41 @@ textarea { min-height: 120px; resize: vertical; }
   let local = { status: {}, extra: [], downloader: "" };
   let filter = "todo";
   const previews = new Map();   // keep embeds loaded across re-renders
+  // Shared checkmarks live in this Google Sheet (column A = Posted, column D = reel link).
+  const SHEET_ID = "19SF_3lNtmRRNqh2UCR45i4oW102ulEhaHyp540BOyhc";
+  const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`;
+  let sheet = null;              // Map reelId -> {posted, row}, once the sheet loads
+  function parseCsv(text) {
+    const rows = []; let row = [], cell = "", q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+      else if (c === '"') q = true;
+      else if (c === ",") { row.push(cell); cell = ""; }
+      else if (c === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
+      else if (c !== "\r") cell += c;
+    }
+    if (cell || row.length) { row.push(cell); rows.push(row); }
+    return rows;
+  }
+  async function loadSheet() {
+    try {
+      const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&t=${Date.now()}`);
+      if (!res.ok) throw new Error(res.status);
+      const rows = parseCsv(await res.text());
+      const m = new Map();
+      rows.slice(1).forEach((r, i) => {
+        const id = (String(r[3] || "").match(/\/(?:reel|reels|p)\/([A-Za-z0-9_-]+)/) || [])[1];
+        if (id) m.set(id, { posted: String(r[0]).trim().toUpperCase() === "TRUE", row: i + 2 });
+      });
+      sheet = m;
+      $("syncNote").textContent = "Checkmarks come from the shared Google Sheet.";
+    } catch (e) {
+      sheet = null;
+      $("syncNote").textContent = "Couldn't reach the shared sheet, so checkmarks are saved on this device only.";
+    }
+    render();
+  }
   const $ = (id) => document.getElementById(id);
   try { Object.assign(local, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (_) {}
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(local)); } catch (_) {} };
@@ -143,7 +179,10 @@ textarea { min-height: 120px; resize: vertical; }
       ta.remove(); return ok;
     }
   }
-  const statusOf = (r) => r.posted ? "posted" : (local.status[r.id] || "todo");
+  const statusOf = (r) => {
+    if (sheet && sheet.has(r.id)) return sheet.get(r.id).posted ? "posted" : (local.status[r.id] === "copied" ? "copied" : "todo");
+    return r.posted ? "posted" : (local.status[r.id] || "todo");
+  };
   function setStatus(r, st) { local.status[r.id] = st; if (st !== "posted") r.posted = false; save(); render(); }
   function downloadHref(url) {
     const t = local.downloader;
@@ -201,8 +240,15 @@ textarea { min-height: 120px; resize: vertical; }
         if (href) { dl.href = href; dl.onclick = () => { copyText(r.url); if (st === "todo") setStatus(r, "copied"); }; }
         else { dl.href = "#"; dl.onclick = (e) => { e.preventDefault(); $("setBox").open = true; $("dlTemplate").focus(); toast("Add your downloader site first"); }; }
       }
-      const postB = el("button", "btn" + (st === "posted" ? " done" : ""), st === "posted" ? "Posted ✓" : "Posted");
-      postB.onclick = () => { const now = statusOf(r) === "posted" ? "copied" : "posted"; setStatus(r, now); toast(now === "posted" ? `#${r.n} marked posted` : `#${r.n} back in the queue`); };
+      let postB;
+      if (sheet && sheet.has(r.id)) {
+        postB = el("a", "btn" + (st === "posted" ? " done" : ""), st === "posted" ? "Posted ✓" : "Check off");
+        postB.href = `${SHEET_URL}#gid=0&range=A${sheet.get(r.id).row}`; postB.target = "_blank"; postB.rel = "noopener";
+        postB.title = "Opens the shared sheet on this reel's row";
+      } else {
+        postB = el("button", "btn" + (st === "posted" ? " done" : ""), st === "posted" ? "Posted ✓" : "Posted");
+        postB.onclick = () => { const now = statusOf(r) === "posted" ? "copied" : "posted"; setStatus(r, now); toast(now === "posted" ? `#${r.n} marked posted` : `#${r.n} back in the queue`); };
+      }
       acts.append(copyB, dl, postB); side.appendChild(acts);
       if (r.file) {
         const f = el("div", "file"); const v = document.createElement("video");
@@ -231,13 +277,15 @@ textarea { min-height: 120px; resize: vertical; }
     local.downloader = v; save(); render(); toast("Downloader saved");
   };
   $("dlTemplate").value = local.downloader || "";
+  $("refreshBtn").onclick = () => { $("syncNote").textContent = "Refreshing…"; loadSheet(); };
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && reels.length) loadSheet(); });
 
   fetch("reels.json", { cache: "no-store" }).then(r => r.json()).then(base => {
     const ids = new Set(base.map(r => r.id));
     local.extra = local.extra.filter(r => !ids.has(r.id));   // once a reel is in reels.json, drop the local copy
     save();
     reels = base.concat(local.extra).sort((a, b) => a.n - b.n);
-    render();
+    render(); loadSheet();
   }).catch(() => { $("count").textContent = "Couldn't load reels.json"; $("list").textContent = ""; $("list").appendChild(el("p", "empty", "Open this page through a web server (GitHub Pages, or python3 -m http.server) so it can read reels.json.")); });
 })();
 </script></body></html>
