@@ -48,10 +48,14 @@ h1 { font-family: var(--font-display); font-weight: 700; font-size: 1.45rem; mar
 
 main { display: grid; gap: 10px; padding-top: 14px; }
 .day { font: 600 0.72rem var(--font-body); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 12px 0 2px; }
-.reel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 12px; grid-template-columns: 1fr; align-items: start; }
-.reel .side { display: grid; gap: 10px; min-width: 0; }
-.preview { width: 100%; max-width: 340px; height: 470px; border: 0; border-radius: 8px; background: var(--bg); justify-self: center; }
-@media (min-width: 720px) { .reel { grid-template-columns: 340px 1fr; } .preview { justify-self: start; } }
+.reel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: grid; gap: 12px; grid-template-columns: 104px 1fr; align-items: start; }
+.reel .side { display: grid; gap: 8px; min-width: 0; align-content: start; }
+/* Small thumbnail: Instagram's embed drawn at full size, then scaled down to fit. */
+.thumb { display: block; position: relative; width: 104px; height: 185px; overflow: hidden; border-radius: 8px; background: var(--bg); }
+.thumb iframe { position: absolute; top: 0; left: 0; width: 330px; height: 588px; border: 0; transform: scale(0.315); transform-origin: 0 0; pointer-events: none; }
+.reel .actions { grid-template-columns: 1fr; }
+.reel .btn { min-height: 40px; }
+@media (min-width: 560px) { .reel .actions { grid-template-columns: repeat(3, 1fr); } }
 .reel.posted { opacity: 0.62; }
 .top { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .num { font: 700 1.05rem var(--font-display); width: 2.2ch; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); flex: none; }
@@ -209,10 +213,14 @@ textarea { min-height: 120px; resize: vertical; }
       const card = el("div", "reel" + (st === "posted" ? " posted" : ""));
       let pv = previews.get(r.id);
       if (!pv) {
-        pv = document.createElement("iframe");
-        pv.className = "preview"; pv.loading = "lazy"; pv.title = "Preview of reel " + r.n;
-        pv.src = `https://www.instagram.com/reel/${encodeURIComponent(r.id)}/embed/captioned/`;
-        pv.setAttribute("scrolling", "no"); pv.setAttribute("allowtransparency", "true");
+        pv = document.createElement("a");
+        pv.className = "thumb"; pv.href = r.url; pv.target = "_blank"; pv.rel = "noopener";
+        pv.setAttribute("aria-label", "Open reel " + r.n + " on Instagram");
+        const f = document.createElement("iframe");
+        f.loading = "lazy"; f.title = "Preview of reel " + r.n; f.tabIndex = -1;
+        f.src = `https://www.instagram.com/reel/${encodeURIComponent(r.id)}/embed/`;
+        f.setAttribute("scrolling", "no"); f.setAttribute("allowtransparency", "true");
+        pv.appendChild(f);
         previews.set(r.id, pv);
       }
       card.appendChild(pv);
