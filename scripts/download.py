@@ -16,11 +16,33 @@ DATA = ROOT / "reels.json"
 VIDEOS = ROOT / "videos"
 
 
+def logins(text):
+    """The doc holds one login per line: the Instagram sessionid (has %3A in it) and
+    optionally the Reddit reddit_session (a long eyJ... token), with or without a label."""
+    out = {}
+    for line in text.splitlines():
+        v = re.sub(r"\s+", "", re.sub(r"^\s*(instagram|reddit)\s*:", "", line, flags=re.I))
+        if not v:
+            continue
+        if v.startswith("eyJ") and v.count(".") == 2:
+            out["reddit"] = v
+        elif "%3A" in v:
+            out["instagram"] = v
+    return out
+
+
+def instagram_session(text):
+    v = logins(text).get("instagram")
+    if not v:
+        sys.exit("No Instagram sessionid found in the login file")
+    return v
+
+
 def cookie_file(args):
     if "--cookies" in args:
         return args[args.index("--cookies") + 1]
     if "--sessionid-file" in args:
-        v = re.sub(r"\s+", "", Path(args[args.index("--sessionid-file") + 1]).read_text(encoding="utf-8-sig"))
+        v = instagram_session(Path(args[args.index("--sessionid-file") + 1]).read_text(encoding="utf-8-sig"))
         uid = v.split("%3A")[0]
         fd, p = tempfile.mkstemp(prefix="igc-", suffix=".txt")
         with os.fdopen(fd, "w") as f:
