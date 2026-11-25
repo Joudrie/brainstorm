@@ -74,6 +74,8 @@ main { display: grid; gap: 10px; padding-top: 14px; }
 .btn[aria-disabled="true"] { opacity: 0.45; pointer-events: none; }
 .btn:focus-visible, .tab:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .file { font-size: 0.8rem; color: var(--muted); }
+.cap { font-size: 0.8rem; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
+.cap b { color: var(--fg); font-weight: 600; }
 .file video { width: 100%; max-height: 360px; border-radius: 8px; background: #000; margin-top: 6px; }
 
 details { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-top: 18px; }
@@ -231,6 +233,16 @@ textarea { min-height: 120px; resize: vertical; }
       a.href = r.url; a.target = "_blank"; a.rel = "noopener"; code.appendChild(a); top.appendChild(code);
       top.appendChild(el("span", "pill " + st, st === "todo" ? "To do" : st === "copied" ? "Copied" : "Posted"));
       side.appendChild(top);
+      if (r.creator || r.caption) {
+        const cap = el("p", "cap"); const b = el("b", null, "Caption: ");
+        cap.appendChild(b);
+        cap.appendChild(document.createTextNode(r.caption || (r.creator ? `🎥 @${r.creator}  #gta6 #gtavi #vicecity #gta #gaming` : "")));
+        side.appendChild(cap);
+      }
+      if (r.postUrl && /^https:\/\//.test(r.postUrl)) {
+        const pl = el("a", "cap", "View post on Instagram ↗"); pl.href = r.postUrl; pl.target = "_blank"; pl.rel = "noopener";
+        side.appendChild(pl);
+      }
 
       const acts = el("div", "actions");
       const copyB = el("button", "btn", st === "todo" ? "Copy" : "Copy again");
@@ -258,10 +270,7 @@ textarea { min-height: 120px; resize: vertical; }
         postB.onclick = () => { const now = statusOf(r) === "posted" ? "copied" : "posted"; setStatus(r, now); toast(now === "posted" ? `#${r.n} marked posted` : `#${r.n} back in the queue`); };
       }
       acts.append(copyB, dl, postB); side.appendChild(acts);
-      if (r.file) {
-        const f = el("div", "file"); const v = document.createElement("video");
-        v.src = r.file; v.controls = true; v.preload = "metadata"; v.playsInline = true; f.appendChild(v); side.appendChild(f);
-      }
+
       list.appendChild(card);
     }
   }
