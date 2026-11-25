@@ -49,6 +49,8 @@ main { display: grid; gap: 6px; padding-top: 10px; }
 /* Thumbnail: Instagram's embed drawn full size, scaled down, bottom third (likes bar) cropped off. */
 .thumb { display: block; position: relative; width: 72px; height: 86px; overflow: hidden; border-radius: 6px; background: var(--bg); }
 .thumb iframe { position: absolute; top: -10px; left: 0; width: 330px; height: 588px; border: 0; transform: scale(0.218); transform-origin: 0 0; pointer-events: none; }
+.vthumb { width: 100%; height: 100%; object-fit: cover; display: block; }
+.srcbadge { position: absolute; left: 3px; bottom: 3px; font: 700 0.55rem var(--font-body); background: var(--fg); color: var(--bg); padding: 1px 4px; border-radius: 4px; }
 .top { display: flex; align-items: center; gap: 6px; min-width: 0; flex-wrap: wrap; }
 .handle { cursor: grab; color: var(--muted); font-size: 1rem; line-height: 1; padding: 2px 4px; user-select: none; touch-action: none; }
 .num { font: 700 0.95rem var(--font-display); color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -235,10 +237,18 @@ textarea { min-height: 100px; resize: vertical; }
       let pv = previews.get(r.id);
       if (!pv) {
         pv = el("a", "thumb"); pv.href = r.url; pv.target = "_blank"; pv.rel = "noopener";
-        pv.setAttribute("aria-label", "Open reel " + r.n + " on Instagram");
-        const f = document.createElement("iframe"); f.loading = "lazy"; f.tabIndex = -1; f.title = "Preview of reel " + r.n;
-        f.src = `https://www.instagram.com/reel/${encodeURIComponent(r.id)}/embed/`; f.setAttribute("scrolling", "no");
-        pv.appendChild(f); previews.set(r.id, pv);
+        const src = r.source || "instagram";
+        pv.setAttribute("aria-label", "Open clip " + r.n + " on " + src);
+        if (src === "instagram") {
+          const f = document.createElement("iframe"); f.loading = "lazy"; f.tabIndex = -1; f.title = "Preview of reel " + r.n;
+          f.src = `https://www.instagram.com/reel/${encodeURIComponent(r.id)}/embed/`; f.setAttribute("scrolling", "no");
+          pv.appendChild(f);
+        } else if (r.file) {
+          const v = document.createElement("video"); v.src = r.file + "#t=1"; v.muted = true; v.preload = "metadata"; v.playsInline = true;
+          v.className = "vthumb"; pv.appendChild(v);
+        }
+        if (src !== "instagram") pv.appendChild(el("span", "srcbadge", ({ tiktok: "TikTok", reddit: "Reddit", comp: "Comp" })[src] || src));
+        previews.set(r.id, pv);
       }
       card.appendChild(pv);
       const side = el("div", "side"); card.appendChild(side);
