@@ -76,7 +76,7 @@ def main():
         targets = [r for r in reels if r["n"] == n]
     else:
         k = int(args[args.index("--next") + 1]) if "--next" in args else 1
-        queue = sorted([r for r in reels if not r.get("posted") and r.get("file")],
+        queue = sorted([r for r in reels if not r.get("posted") and r.get("file") and not r.get("flag")],
                        key=lambda r: (r.get("queue", 10**6), r["n"]))
         targets = queue[:k]
     if not targets:
