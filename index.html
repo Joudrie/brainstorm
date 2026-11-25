@@ -253,6 +253,7 @@ textarea { min-height: 100px; resize: vertical; }
 
       const cap = captionOf(r);
       if (cap) side.appendChild(el("p", "cap", cap.replace(/\n+/g, " ")));
+      if (r.flag && !isPosted(r)) side.appendChild(el("p", "errmsg", "⚠ " + r.flag));
       if (st === "failed") side.appendChild(el("p", "errmsg", errorOf(r)));
       const pu = postUrlOf(r);
       if (pu && /^https:\/\//.test(pu)) { const a = el("a", "postlink", "View on Instagram ↗"); a.href = pu; a.target = "_blank"; a.rel = "noopener"; side.appendChild(a); }

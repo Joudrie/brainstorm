@@ -33,7 +33,7 @@ def main():
             r["score"] = score(r, now)
     pinned = sorted([r for r in reels if not r.get("posted") and r.get("manualQueue")], key=lambda r: r["queue"])
     auto = sorted([r for r in reels if not r.get("posted") and not r.get("manualQueue")],
-                  key=lambda r: (-r["score"], r["n"]))
+                  key=lambda r: (bool(r.get("flag")), -r["score"], r["n"]))
     order = pinned + auto
     for i, r in enumerate(order, 1):
         r["queue"] = i
