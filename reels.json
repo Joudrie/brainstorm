@@ -4,18 +4,21 @@
   "id": "DgFxQyhIBfE",
   "url": "https://www.instagram.com/reel/DgFxQyhIBfE/",
   "day": "Nov 23",
-  "posted": false,
+  "posted": true,
   "file": "videos/001-DgFxQyhIBfE.mp4",
-  "creator": "labricore.ai"
+  "creator": "labricore.ai",
+  "postedAt": "2026-11-25T18:25:14+00:00",
+  "postUrl": "https://www.instagram.com/reel/DgLKvn5sVI7/"
  },
  {
   "n": 2,
   "id": "DgFpQ6ssVUw",
   "url": "https://www.instagram.com/reel/DgFpQ6ssVUw/",
   "day": "Nov 23",
-  "posted": false,
+  "posted": true,
   "file": "videos/002-DgFpQ6ssVUw.mp4",
-  "creator": "itsjoeshi"
+  "creator": "itsjoeshi",
+  "postedNote": "posted manually"
  },
  {
   "n": 3,
