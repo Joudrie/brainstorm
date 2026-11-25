@@ -1,27 +1,17 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Vice City Reel Queue</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap">
 <style>
-
-/* Layout: one narrow column, a sticky progress header, then a queue of reel rows with big thumb-sized buttons. */
+/* Layout: one column of compact reel rows (small cropped thumbnail + controls), sticky header with progress and sort. */
 :root {
-  --bg: #f6f4f8;
-  --surface: #ffffff;
-  --fg: #1d1a24;
-  --muted: #6c6578;
-  --line: #e3dfe9;
-  --accent: #d4247a;      /* Vice pink */
-  --accent-fg: #ffffff;
-  --teal: #0b8f8a;        /* posted */
-  --teal-soft: #dcf2f0;
-  --amber: #a86300;       /* copied, not posted yet */
-  --amber-soft: #fbeed8;
-  --red: #c0262d;
-  --red-soft: #fde2e2;
+  --bg: #f6f4f8; --surface: #ffffff; --fg: #1d1a24; --muted: #6c6578; --line: #e3dfe9;
+  --accent: #c2307a; --accent-fg: #ffffff;
+  --teal: #0b8f8a; --teal-soft: #dcf2f0;
+  --amber: #a86300; --amber-soft: #fbeed8;
+  --red: #c0262d; --red-soft: #fde2e2;
   --font-display: "Space Grotesk", system-ui, sans-serif;
   --font-body: "Inter", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #15121b; --surface: #1f1b27; --fg: #f1edf6; --muted: #a39cb0; --line: #332d3e;
@@ -33,297 +23,282 @@
   --amber: #f2b15a; --amber-soft: #3a2a12; --red: #ff6b6b; --red-soft: #3d1517; color-scheme: dark; }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; } body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
-body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
-.wrap { max-width: 920px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.4; }
+.wrap { max-width: 760px; margin: 0 auto; padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); padding-block: 0 48px; }
 
-header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 18px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
-h1 { font-family: var(--font-display); font-weight: 700; font-size: 1.45rem; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
-.sub { color: var(--muted); font-size: 0.85rem; margin: 0; }
+header { position: sticky; top: 0; z-index: 5; background: var(--bg); padding-block: 12px 10px; border-bottom: 1px solid var(--line); display: grid; gap: 8px; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; margin: 0; }
+.sub { color: var(--muted); font-size: 0.78rem; margin: 0; }
 .sub a, .linkbtn { color: var(--accent); font: inherit; font-weight: 600; background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
-.progress { display: flex; align-items: center; gap: 10px; font-variant-numeric: tabular-nums; font-size: 0.85rem; color: var(--muted); }
-.bar { flex: 1; height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.progress { display: flex; align-items: center; gap: 10px; font-variant-numeric: tabular-nums; font-size: 0.8rem; color: var(--muted); }
+.bar { flex: 1; height: 6px; border-radius: 99px; background: var(--line); overflow: hidden; }
 .bar > i { display: block; height: 100%; width: 0; background: var(--teal); transition: width .3s; }
-.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
-.tab { font: 500 0.85rem var(--font-body); border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 6px 12px; border-radius: 99px; cursor: pointer; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.tab { font: 500 0.78rem var(--font-body); border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 5px 10px; border-radius: 99px; cursor: pointer; }
 .tab[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.sortlbl { font-size: 0.75rem; color: var(--muted); margin-left: 4px; }
 
-main { display: grid; gap: 10px; padding-top: 14px; }
-.day { font: 600 0.72rem var(--font-body); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 12px 0 2px; }
-.reel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: grid; gap: 12px; grid-template-columns: 104px 1fr; align-items: start; }
-.reel .side { display: grid; gap: 8px; min-width: 0; align-content: start; }
-/* Small thumbnail: Instagram's embed drawn at full size, then scaled down to fit. */
-.thumb { display: block; position: relative; width: 104px; height: 185px; overflow: hidden; border-radius: 8px; background: var(--bg); }
-.thumb iframe { position: absolute; top: 0; left: 0; width: 330px; height: 588px; border: 0; transform: scale(0.315); transform-origin: 0 0; pointer-events: none; }
-.reel .actions { grid-template-columns: 1fr; }
-.reel .btn { min-height: 40px; }
-@media (min-width: 560px) { .reel .actions { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 559px) { .reel .code { display: none; } .reel .top { flex-wrap: wrap; } }
-.reel.posted { border-color: var(--teal); background: color-mix(in srgb, var(--teal-soft) 55%, var(--surface)); }
-.reel.failed { border-color: var(--red); background: color-mix(in srgb, var(--red-soft) 55%, var(--surface)); }
-.sortlbl { font-size: 0.8rem; color: var(--muted); align-self: center; margin-left: 6px; }
-.score { font: 600 0.72rem var(--font-body); padding: 3px 8px; border-radius: 99px; background: var(--line); color: var(--fg); flex: none; font-variant-numeric: tabular-nums; }
-.qpos { font: 700 0.72rem var(--font-body); color: var(--accent); flex: none; }
-.pill.failed { background: var(--red-soft); color: var(--red); }
-.errmsg { font-size: 0.78rem; color: var(--red); margin: 0; overflow-wrap: anywhere; }
-.top { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.num { font: 700 1.05rem var(--font-display); width: 2.2ch; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); flex: none; }
-.code { font: 500 0.9rem var(--font-mono); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-.code a { color: inherit; text-decoration: none; }
-.code a:hover { text-decoration: underline; }
-.pill { font: 600 0.7rem var(--font-body); letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 8px; border-radius: 99px; flex: none; }
+main { display: grid; gap: 6px; padding-top: 10px; }
+.day { font: 600 0.7rem var(--font-body); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 8px 0 0; }
+.reel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 6px; display: grid; gap: 10px; grid-template-columns: 72px 1fr; align-items: start; }
+.reel.posted { border-color: var(--teal); background: color-mix(in srgb, var(--teal-soft) 60%, var(--surface)); }
+.reel.failed { border-color: var(--red); background: color-mix(in srgb, var(--red-soft) 60%, var(--surface)); }
+.reel.sortable-ghost { opacity: 0.4; }
+.side { display: grid; gap: 5px; min-width: 0; }
+/* Thumbnail: Instagram's embed drawn full size, scaled down, bottom third (likes bar) cropped off. */
+.thumb { display: block; position: relative; width: 72px; height: 86px; overflow: hidden; border-radius: 6px; background: var(--bg); }
+.thumb iframe { position: absolute; top: -10px; left: 0; width: 330px; height: 588px; border: 0; transform: scale(0.218); transform-origin: 0 0; pointer-events: none; }
+.top { display: flex; align-items: center; gap: 6px; min-width: 0; flex-wrap: wrap; }
+.handle { cursor: grab; color: var(--muted); font-size: 1rem; line-height: 1; padding: 2px 4px; user-select: none; touch-action: none; }
+.num { font: 700 0.95rem var(--font-display); color: var(--muted); font-variant-numeric: tabular-nums; }
+.qpos { font: 700 0.72rem var(--font-body); color: var(--accent); }
+.score { font: 600 0.7rem var(--font-body); padding: 2px 7px; border-radius: 99px; background: var(--line); font-variant-numeric: tabular-nums; }
+.pill { font: 600 0.64rem var(--font-body); letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 7px; border-radius: 99px; margin-left: auto; }
 .pill.todo { background: var(--line); color: var(--muted); }
 .pill.copied { background: var(--amber-soft); color: var(--amber); }
 .pill.posted { background: var(--teal-soft); color: var(--teal); }
-.actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.btn { font: 600 0.9rem var(--font-body); min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 10px; }
+.pill.failed { background: var(--red-soft); color: var(--red); }
+.pill.posting { background: var(--amber-soft); color: var(--amber); }
+.cap { font-size: 0.75rem; color: var(--muted); margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.errmsg { font-size: 0.72rem; color: var(--red); margin: 0; overflow-wrap: anywhere; }
+.actions { display: grid; grid-template-columns: 1.3fr 1fr 1fr 0.8fr; gap: 5px; }
+.btn { font: 600 0.8rem var(--font-body); min-height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 6px; white-space: nowrap; }
 .btn:hover { border-color: var(--muted); }
 .btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.btn.confirm { background: var(--amber); color: var(--surface); border-color: var(--amber); }
 .btn.done { background: var(--teal); color: var(--surface); border-color: var(--teal); }
-.btn[aria-disabled="true"] { opacity: 0.45; pointer-events: none; }
-.btn:focus-visible, .tab:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.file { font-size: 0.8rem; color: var(--muted); }
-.cap { font-size: 0.8rem; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
-.cap b { color: var(--fg); font-weight: 600; }
-.file video { width: 100%; max-height: 360px; border-radius: 8px; background: #000; margin-top: 6px; }
+.btn[disabled] { opacity: 0.45; cursor: default; }
+.btn:focus-visible, .tab:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+a.postlink { font-size: 0.72rem; color: var(--teal); font-weight: 600; }
 
-details { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-top: 18px; }
-summary { font: 600 0.95rem var(--font-display); cursor: pointer; }
-details .body { display: grid; gap: 10px; padding-top: 10px; }
-textarea, input[type=text] { width: 100%; font: 0.85rem var(--font-mono); background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
-textarea { min-height: 120px; resize: vertical; }
-.hint { color: var(--muted); font-size: 0.8rem; margin: 0; }
-.empty { text-align: center; color: var(--muted); padding: 32px 8px; }
-.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); font-weight: 600; font-size: 0.85rem; padding: 10px 16px; border-radius: 99px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20; }
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin-top: 14px; }
+summary { font: 600 0.9rem var(--font-display); cursor: pointer; }
+details .body { display: grid; gap: 8px; padding-top: 8px; }
+textarea, input[type=text], input[type=password] { width: 100%; font: 0.85rem var(--font-body); background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 9px; }
+textarea { min-height: 100px; resize: vertical; }
+.hint { color: var(--muted); font-size: 0.78rem; margin: 0; }
+.empty { text-align: center; color: var(--muted); padding: 28px 8px; }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); font-weight: 600; font-size: 0.85rem; padding: 10px 16px; border-radius: 99px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20; max-width: 90vw; text-align: center; }
 .toast.show { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .bar > i, .toast { transition: none; } }
 </style></head><body>
-
 
 <div class="wrap">
   <header>
     <div>
       <h1>Vice City Reel Queue</h1>
-      <p class="sub">Copy, download, post, then check it off. <span id="syncNote">Loading checkmarks…</span> <a href="https://docs.google.com/spreadsheets/d/19SF_3lNtmRRNqh2UCR45i4oW102ulEhaHyp540BOyhc/edit" target="_blank" rel="noopener">Open sheet</a> · <button class="linkbtn" id="refreshBtn" type="button">Refresh</button></p>
+      <p class="sub"><span id="syncNote">Loading…</span> <button class="linkbtn" id="refreshBtn" type="button">Refresh</button></p>
     </div>
     <div class="progress"><div class="bar"><i id="barFill"></i></div><span id="count">Loading…</span></div>
-    <div class="tabs" role="group" aria-label="Filter">
-      <button class="tab" id="tab-todo" data-f="todo" aria-pressed="true">To post</button>
-      <button class="tab" id="tab-posted" data-f="posted" aria-pressed="false">Posted</button>
-      <button class="tab" id="tab-all" data-f="all" aria-pressed="false">All</button>
+    <div class="tabs" role="group" aria-label="Filter and sort">
+      <button class="tab" data-f="todo" aria-pressed="true">To post</button>
+      <button class="tab" data-f="posted" aria-pressed="false">Posted</button>
+      <button class="tab" data-f="all" aria-pressed="false">All</button>
       <span class="sortlbl">Sort:</span>
-      <button class="tab" id="sort-queue" data-s="queue" aria-pressed="true">Posting order</button>
-      <button class="tab" id="sort-added" data-s="added" aria-pressed="false">Recently added</button>
+      <button class="tab" data-s="queue" aria-pressed="true">Posting order</button>
+      <button class="tab" data-s="added" aria-pressed="false">Recently added</button>
     </div>
   </header>
 
-  <main id="list"><p class="empty" id="emptyMsg">Loading your reels…</p></main>
+  <main id="list"><p class="empty">Loading your reels…</p></main>
 
-  <details id="addBox">
-    <summary>Add more reels</summary>
+  <details id="pinBox">
+    <summary>Posting PIN</summary>
     <div class="body">
-      <p class="hint">Paste Muse's whole message. New reel links are added on this device. To add them for good (and get them downloaded), run <code>scripts/add_reels.py</code> or send the list to Claude.</p>
-      <textarea id="pasteIn" placeholder="https://www.instagram.com/reel/…"></textarea>
-      <button class="btn primary" id="addBtn">Add reels</button>
-    </div>
-  </details>
-
-  <details id="setBox">
-    <summary>Downloader site</summary>
-    <div class="body">
-      <p class="hint">Put the downloader's address here with <code>{url}</code> where the reel link goes. Example: <code>https://example-downloader.com/?url={url}</code>. If the site has no such address, leave it as just the site and the Download button will copy the link and open the site so you can paste.</p>
-      <input type="text" id="dlTemplate" placeholder="https://…{url}">
-      <button class="btn" id="saveDl">Save downloader</button>
+      <p class="hint">Enter the PIN once on each device. Post, Check off and reordering only save for people who have it.</p>
+      <input type="password" id="pinIn" placeholder="PIN" autocomplete="off">
+      <button class="btn primary" id="savePin" type="button">Save PIN on this device</button>
     </div>
   </details>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <script>
 (() => {
-  const KEY = "reelQueue.v1";
-  let reels = [];      // from reels.json + local extras
-  let local = { status: {}, extra: [], downloader: "" };
-  let filter = "todo";
-  let sortBy = "queue";
-  const previews = new Map();   // keep embeds loaded across re-renders
-  // Shared checkmarks live in this Google Sheet (column A = Posted, column D = reel link).
-  const SHEET_ID = "19SF_3lNtmRRNqh2UCR45i4oW102ulEhaHyp540BOyhc";
-  const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`;
-  let sheet = null;              // Map reelId -> {posted, row}, once the sheet loads
-  function parseCsv(text) {
-    const rows = []; let row = [], cell = "", q = false;
-    for (let i = 0; i < text.length; i++) {
-      const c = text[i];
-      if (q) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
-      else if (c === '"') q = true;
-      else if (c === ",") { row.push(cell); cell = ""; }
-      else if (c === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
-      else if (c !== "\r") cell += c;
-    }
-    if (cell || row.length) { row.push(cell); rows.push(row); }
-    return rows;
-  }
-  async function loadSheet() {
-    try {
-      const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&t=${Date.now()}`);
-      if (!res.ok) throw new Error(res.status);
-      const rows = parseCsv(await res.text());
-      const m = new Map();
-      rows.slice(1).forEach((r, i) => {
-        const id = (String(r[3] || "").match(/\/(?:reel|reels|p)\/([A-Za-z0-9_-]+)/) || [])[1];
-        if (id) m.set(id, { posted: String(r[0]).trim().toUpperCase() === "TRUE", row: i + 2 });
-      });
-      sheet = m;
-      $("syncNote").textContent = "Checkmarks come from the shared Google Sheet.";
-    } catch (e) {
-      sheet = null;
-      $("syncNote").textContent = "Couldn't reach the shared sheet, so checkmarks are saved on this device only.";
-    }
-    render();
-  }
+  // Google Apps Script backend (posts to Instagram, saves order and checkmarks). Empty = read-only mode.
+  const API_URL = "";
+  const SITE = "https://joudrie.github.io/brainstorm/";
+  const KEY = "reelQueue.v2";
   const $ = (id) => document.getElementById(id);
+  let reels = [], filter = "todo", sortBy = "queue", backend = null, sortable = null;
+  const posting = new Set(), armed = new Map(), previews = new Map();
+  let local = { copied: {}, order: null, pin: "" };
   try { Object.assign(local, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (_) {}
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(local)); } catch (_) {} };
 
-  function toast(msg) {
-    const t = $("toast"); t.textContent = msg; t.classList.add("show");
-    clearTimeout(toast._h); toast._h = setTimeout(() => t.classList.remove("show"), 1600);
-  }
+  function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toast._h); toast._h = setTimeout(() => t.classList.remove("show"), 2200); }
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   async function copyText(text) {
     try { await navigator.clipboard.writeText(text); return true; }
-    catch (e) {
-      const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta);
-      ta.select(); let ok = false; try { ok = document.execCommand("copy"); } catch (_) {}
-      ta.remove(); return ok;
-    }
+    catch (e) { const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand("copy"); } catch (_) {} ta.remove(); return ok; }
   }
-  const statusOf = (r) => {
-    if (sheet && sheet.has(r.id)) return sheet.get(r.id).posted ? "posted" : (local.status[r.id] === "copied" ? "copied" : "todo");
-    return r.posted ? "posted" : (local.status[r.id] || "todo");
-  };
-  function setStatus(r, st) { local.status[r.id] = st; if (st !== "posted") r.posted = false; save(); render(); }
-  function downloadHref(url) {
-    const t = local.downloader;
-    if (!t || !t.startsWith("https://")) return null;
-    return t.includes("{url}") ? t.replace("{url}", encodeURIComponent(url)) : t;
-  }
-  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  const captionOf = (r) => r.caption || (r.creator ? `🎥 @${r.creator}\n\n#gta6 #gtavi #vicecity #gta #gaming` : "");
 
-  function render() {
-    const posted = reels.filter(r => statusOf(r) === "posted").length;
-    $("count").textContent = reels.length ? `${posted} / ${reels.length} posted` : "No reels yet";
-    $("barFill").style.width = reels.length ? (100 * posted / reels.length) + "%" : "0";
-    document.querySelectorAll("[data-f]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.f === filter)));
-    const list = $("list"); list.textContent = "";
-    const shown = reels.filter(r => filter === "all" || (filter === "posted" ? statusOf(r) === "posted" : statusOf(r) !== "posted"));
-    if (sortBy === "queue") shown.sort((a, b) => (statusOf(a) === "posted") - (statusOf(b) === "posted") || (a.queue ?? 1e6) - (b.queue ?? 1e6) || a.n - b.n);
-    else shown.sort((a, b) => b.n - a.n);
-    document.querySelectorAll("[data-s]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.s === sortBy)));
-    if (!shown.length) {
-      list.appendChild(el("p", "empty", reels.length ? (filter === "todo" ? "All caught up. Paste a new batch below." : "Nothing posted yet.") : "No reels yet."));
-      return;
+  // ---- state merging: reels.json + backend sheet + this device ----
+  const row = (r) => (backend && backend[r.id]) || {};
+  const isPosted = (r) => !!(r.posted || row(r).posted);
+  const errorOf = (r) => row(r).error || r.postError || "";
+  const postUrlOf = (r) => row(r).postUrl || r.postUrl || "";
+  const queueOf = (r) => {
+    if (row(r).queue) return row(r).queue;
+    if (local.order) { const i = local.order.indexOf(r.id); if (i >= 0) return i + 1; }
+    return r.queue ?? 1e6;
+  };
+  function statusOf(r) {
+    if (isPosted(r)) return "posted";
+    if (posting.has(r.id)) return "posting";
+    if (errorOf(r)) return "failed";
+    return local.copied[r.id] ? "copied" : "todo";
+  }
+
+  async function api(action, body) {
+    if (!API_URL) throw new Error("not set up");
+    if (!local.pin) { $("pinBox").open = true; $("pinIn").focus(); throw new Error("Enter your posting PIN first"); }
+    const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action, pin: local.pin, ...body }) });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Something went wrong");
+    return data;
+  }
+  async function loadBackend() {
+    if (!API_URL) { $("syncNote").textContent = "Posting from this page isn't connected yet."; return; }
+    try {
+      const res = await fetch(API_URL + "?action=state&t=" + Date.now());
+      const data = await res.json();
+      backend = {}; (data.rows || []).forEach(x => { backend[x.id] = x; });
+      $("syncNote").textContent = "Saved for everyone.";
+    } catch (e) { $("syncNote").textContent = "Couldn't reach the queue server, showing the last saved list."; }
+    render();
+  }
+
+  // ---- actions ----
+  async function doPost(r, btn) {
+    if (!armed.has(r.id)) {           // first tap arms, second tap posts
+      armed.set(r.id, setTimeout(() => { armed.delete(r.id); render(); }, 4000));
+      render(); return;
     }
+    clearTimeout(armed.get(r.id)); armed.delete(r.id);
+    posting.add(r.id); render(); toast(`Posting #${r.n}… this takes about a minute`);
+    try {
+      const d = await api("post", { id: r.id, n: r.n, url: r.url, videoUrl: SITE + r.file, caption: captionOf(r) });
+      backend = backend || {}; backend[r.id] = { ...(backend[r.id] || {}), posted: true, postUrl: d.postUrl, error: "" };
+      toast(`#${r.n} is live on Instagram`);
+    } catch (e) {
+      backend = backend || {}; backend[r.id] = { ...(backend[r.id] || {}), error: e.message };
+      toast(`#${r.n} didn't post: ${e.message}`);
+    }
+    posting.delete(r.id); render();
+  }
+  async function toggleCheck(r) {
+    const now = !isPosted(r);
+    if (!API_URL) { toast("Checkmarks will save once posting is connected"); return; }
+    try {
+      await api("check", { id: r.id, n: r.n, url: r.url, posted: now });
+      backend = backend || {}; backend[r.id] = { ...(backend[r.id] || {}), posted: now, error: "" };
+      if (!now) r.posted = false;
+      render(); toast(now ? `#${r.n} marked posted` : `#${r.n} back in the queue`);
+    } catch (e) { toast(e.message); }
+  }
+  async function saveOrder(ids) {
+    local.order = ids; save();
+    if (!API_URL) { toast("Order saved on this device"); render(); return; }
+    try { await api("order", { ids }); backend = backend || {}; ids.forEach((id, i) => { backend[id] = { ...(backend[id] || {}), queue: i + 1 }; }); toast("Queue order saved"); }
+    catch (e) { toast("Order saved on this device only: " + e.message); }
+    render();
+  }
+
+  // ---- render ----
+  function render() {
+    const postedN = reels.filter(isPosted).length;
+    $("count").textContent = `${postedN} / ${reels.length} posted`;
+    $("barFill").style.width = reels.length ? (100 * postedN / reels.length) + "%" : "0";
+    document.querySelectorAll("[data-f]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.f === filter)));
+    document.querySelectorAll("[data-s]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.s === sortBy)));
+
+    let shown = reels.filter(r => filter === "all" || (filter === "posted" ? isPosted(r) : !isPosted(r)));
+    if (sortBy === "queue") shown.sort((a, b) => isPosted(a) - isPosted(b) || queueOf(a) - queueOf(b) || a.n - b.n);
+    else shown.sort((a, b) => b.n - a.n);
+    const unposted = reels.filter(r => !isPosted(r)).sort((a, b) => queueOf(a) - queueOf(b) || a.n - b.n);
+    const linePos = new Map(unposted.map((r, i) => [r.id, i + 1]));
+
+    const list = $("list"); list.textContent = "";
+    if (!shown.length) { list.appendChild(el("p", "empty", filter === "posted" ? "Nothing posted yet." : "All caught up.")); return; }
     let lastDay = null;
     for (const r of shown) {
       if (sortBy === "added" && r.day && r.day !== lastDay) { list.appendChild(el("div", "day", r.day)); lastDay = r.day; }
       const st = statusOf(r);
-      const card = el("div", "reel" + (st === "posted" ? " posted" : r.postError ? " failed" : ""));
+      const card = el("div", "reel" + (st === "posted" ? " posted" : st === "failed" ? " failed" : ""));
+      card.dataset.id = r.id;
+
       let pv = previews.get(r.id);
       if (!pv) {
-        pv = document.createElement("a");
-        pv.className = "thumb"; pv.href = r.url; pv.target = "_blank"; pv.rel = "noopener";
+        pv = el("a", "thumb"); pv.href = r.url; pv.target = "_blank"; pv.rel = "noopener";
         pv.setAttribute("aria-label", "Open reel " + r.n + " on Instagram");
-        const f = document.createElement("iframe");
-        f.loading = "lazy"; f.title = "Preview of reel " + r.n; f.tabIndex = -1;
-        f.src = `https://www.instagram.com/reel/${encodeURIComponent(r.id)}/embed/`;
-        f.setAttribute("scrolling", "no"); f.setAttribute("allowtransparency", "true");
-        pv.appendChild(f);
-        previews.set(r.id, pv);
+        const f = document.createElement("iframe"); f.loading = "lazy"; f.tabIndex = -1; f.title = "Preview of reel " + r.n;
+        f.src = `https://www.instagram.com/reel/${encodeURIComponent(r.id)}/embed/`; f.setAttribute("scrolling", "no");
+        pv.appendChild(f); previews.set(r.id, pv);
       }
       card.appendChild(pv);
       const side = el("div", "side"); card.appendChild(side);
+
       const top = el("div", "top");
-      top.appendChild(el("span", "num", String(r.n)));
-      const code = el("span", "code"); const a = el("a", null, r.id);
-      a.href = r.url; a.target = "_blank"; a.rel = "noopener"; code.appendChild(a); top.appendChild(code);
-      if (st !== "posted" && r.queue) top.appendChild(el("span", "qpos", r.queue === 1 ? "Next up" : "#" + r.queue + " in line"));
-      if (st !== "posted" && typeof r.score === "number") top.appendChild(el("span", "score", r.score.toFixed(1) + "/10"));
-      if (r.postError && st !== "posted") top.appendChild(el("span", "pill failed", "Error"));
-      else top.appendChild(el("span", "pill " + st, st === "todo" ? "To do" : st === "copied" ? "Copied" : "Posted"));
+      if (sortBy === "queue" && !isPosted(r)) { const h = el("span", "handle", "⠿"); h.title = "Drag to reorder"; top.appendChild(h); }
+      top.appendChild(el("span", "num", "#" + r.n));
+      if (!isPosted(r)) { const p = linePos.get(r.id); top.appendChild(el("span", "qpos", p === 1 ? "Next up" : p + " in line")); }
+      if (!isPosted(r) && typeof r.score === "number") top.appendChild(el("span", "score", r.score.toFixed(1)));
+      top.appendChild(el("span", "pill " + st, { todo: "To do", copied: "Copied", posted: "Posted", failed: "Error", posting: "Posting…" }[st]));
       side.appendChild(top);
-      if (r.creator || r.caption) {
-        const cap = el("p", "cap"); const b = el("b", null, "Caption: ");
-        cap.appendChild(b);
-        cap.appendChild(document.createTextNode(r.caption || (r.creator ? `🎥 @${r.creator}  #gta6 #gtavi #vicecity #gta #gaming` : "")));
-        side.appendChild(cap);
-      }
-      if (r.postError && st !== "posted") side.appendChild(el("p", "errmsg", "Posting failed: " + r.postError));
-      if (r.postUrl && /^https:\/\//.test(r.postUrl)) {
-        const pl = el("a", "cap", "View post on Instagram ↗"); pl.href = r.postUrl; pl.target = "_blank"; pl.rel = "noopener";
-        side.appendChild(pl);
-      }
+
+      const cap = captionOf(r);
+      if (cap) side.appendChild(el("p", "cap", cap.replace(/\n+/g, " ")));
+      if (st === "failed") side.appendChild(el("p", "errmsg", errorOf(r)));
+      const pu = postUrlOf(r);
+      if (pu && /^https:\/\//.test(pu)) { const a = el("a", "postlink", "View on Instagram ↗"); a.href = pu; a.target = "_blank"; a.rel = "noopener"; side.appendChild(a); }
 
       const acts = el("div", "actions");
-      const copyB = el("button", "btn", st === "todo" ? "Copy" : "Copy again");
-      copyB.onclick = async () => {
-        const ok = await copyText(r.url);
-        toast(ok ? "Link copied" : "Copy blocked. Long-press the code to copy.");
-        if (ok && st !== "posted") setStatus(r, "copied");
-      };
-      let dl;
-      if (r.file) {
-        dl = el("a", "btn primary", "Save video"); dl.href = r.file; dl.setAttribute("download", r.id + ".mp4");
-      } else {
-        dl = el("a", "btn primary", "Download"); dl.target = "_blank"; dl.rel = "noopener";
-        const href = downloadHref(r.url);
-        if (href) { dl.href = href; dl.onclick = () => { copyText(r.url); if (st === "todo") setStatus(r, "copied"); }; }
-        else { dl.href = "#"; dl.onclick = (e) => { e.preventDefault(); $("setBox").open = true; $("dlTemplate").focus(); toast("Add your downloader site first"); }; }
-      }
-      let postB;
-      if (sheet && sheet.has(r.id)) {
-        postB = el("a", "btn" + (st === "posted" ? " done" : ""), st === "posted" ? "Posted ✓" : "Check off");
-        postB.href = `${SHEET_URL}#gid=0&range=A${sheet.get(r.id).row}`; postB.target = "_blank"; postB.rel = "noopener";
-        postB.title = "Opens the shared sheet on this reel's row";
-      } else {
-        postB = el("button", "btn" + (st === "posted" ? " done" : ""), st === "posted" ? "Posted ✓" : "Posted");
-        postB.onclick = () => { const now = statusOf(r) === "posted" ? "copied" : "posted"; setStatus(r, now); toast(now === "posted" ? `#${r.n} marked posted` : `#${r.n} back in the queue`); };
-      }
-      acts.append(copyB, dl, postB); side.appendChild(acts);
-
+      const postB = el("button", "btn " + (armed.has(r.id) ? "confirm" : "primary"), armed.has(r.id) ? "Tap to confirm" : st === "posting" ? "Posting…" : "Post");
+      postB.disabled = isPosted(r) || st === "posting" || !r.file;
+      if (!API_URL) postB.title = "Posting from the page isn't connected yet";
+      postB.onclick = () => API_URL ? doPost(r, postB) : toast("Posting from this page isn't connected yet");
+      const saveB = el("a", "btn", "Save");
+      if (r.file) { saveB.href = r.file; saveB.setAttribute("download", r.n + "-" + r.id + ".mp4"); } else { saveB.setAttribute("aria-disabled", "true"); }
+      const copyB = el("button", "btn", "Copy");
+      copyB.title = "Copy caption";
+      copyB.onclick = async () => { const ok = await copyText(cap || r.url); toast(ok ? "Caption copied" : "Copy blocked"); if (ok) { local.copied[r.id] = 1; save(); render(); } };
+      const chk = el("button", "btn" + (isPosted(r) ? " done" : ""), isPosted(r) ? "✓" : "☐");
+      chk.title = isPosted(r) ? "Posted. Tap to undo" : "Mark as posted";
+      chk.setAttribute("aria-label", chk.title);
+      chk.onclick = () => toggleCheck(r);
+      acts.append(postB, saveB, copyB, chk);
+      side.appendChild(acts);
       list.appendChild(card);
+    }
+
+    if (sortable) { sortable.destroy(); sortable = null; }
+    if (window.Sortable && sortBy === "queue" && filter !== "posted") {
+      sortable = Sortable.create(list, { handle: ".handle", animation: 150, filter: ".posted", onEnd: () => {
+        const ids = [...list.querySelectorAll(".reel:not(.posted)")].map(c => c.dataset.id);
+        const rest = unposted.map(r => r.id).filter(id => !ids.includes(id));
+        saveOrder(ids.concat(rest));
+      } });
     }
   }
 
   document.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { filter = b.dataset.f; render(); });
   document.querySelectorAll("[data-s]").forEach(b => b.onclick = () => { sortBy = b.dataset.s; render(); });
-  $("addBtn").onclick = () => {
-    const ids = [...$("pasteIn").value.matchAll(/instagram\.com\/(?:reel|reels|p)\/([A-Za-z0-9_-]+)/g)].map(m => m[1]);
-    const have = new Set(reels.map(r => r.id));
-    const fresh = [...new Set(ids)].filter(id => !have.has(id));
-    if (!ids.length) return toast("No reel links found in that text");
-    if (!fresh.length) return toast("All of those are already in the queue");
-    let n = reels.reduce((m, r) => Math.max(m, r.n || 0), 0);
-    const day = "Added " + new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" });
-    for (const id of fresh) { const r = { n: ++n, id, url: `https://www.instagram.com/reel/${id}/`, day, posted: false, file: null }; local.extra.push(r); reels.push(r); }
-    save(); $("pasteIn").value = ""; filter = "todo"; render();
-    toast(`Added ${fresh.length} reel${fresh.length === 1 ? "" : "s"}`);
-  };
-  $("saveDl").onclick = () => {
-    const v = $("dlTemplate").value.trim();
-    if (v && !v.startsWith("https://")) return toast("The address must start with https://");
-    local.downloader = v; save(); render(); toast("Downloader saved");
-  };
-  $("dlTemplate").value = local.downloader || "";
-  $("refreshBtn").onclick = () => { $("syncNote").textContent = "Refreshing…"; loadSheet(); };
-  document.addEventListener("visibilitychange", () => { if (!document.hidden && reels.length) loadSheet(); });
+  $("refreshBtn").onclick = () => { $("syncNote").textContent = "Refreshing…"; loadAll(); };
+  $("pinIn").value = local.pin || "";
+  $("savePin").onclick = () => { local.pin = $("pinIn").value.trim(); save(); toast(local.pin ? "PIN saved on this device" : "PIN cleared"); $("pinBox").open = false; };
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && reels.length) loadBackend(); });
 
-  fetch("reels.json", { cache: "no-store" }).then(r => r.json()).then(base => {
-    const ids = new Set(base.map(r => r.id));
-    local.extra = local.extra.filter(r => !ids.has(r.id));   // once a reel is in reels.json, drop the local copy
-    save();
-    reels = base.concat(local.extra).sort((a, b) => a.n - b.n);
-    render(); loadSheet();
-  }).catch(() => { $("count").textContent = "Couldn't load reels.json"; $("list").textContent = ""; $("list").appendChild(el("p", "empty", "Open this page through a web server (GitHub Pages, or python3 -m http.server) so it can read reels.json.")); });
+  function loadAll() {
+    fetch("reels.json", { cache: "no-store" }).then(r => r.json()).then(base => {
+      reels = base; render(); loadBackend();
+    }).catch(() => { $("count").textContent = "Couldn't load the list"; });
+  }
+  loadAll();
 })();
-</script></body></html>
+</script>
+</body></html>
