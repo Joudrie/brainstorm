@@ -27,7 +27,9 @@
   "day": "Nov 23",
   "posted": false,
   "file": "videos/003-DgDMBkdyWvW.mp4",
-  "creator": "annferkneee"
+  "creator": "annferkneee",
+  "score": 6.5,
+  "queue": 11
  },
  {
   "n": 4,
@@ -36,7 +38,15 @@
   "day": "Nov 23",
   "posted": false,
   "file": "videos/004-DgDFNheJqnU.mp4",
-  "creator": "gtatvlive"
+  "creator": "gtatvlive",
+  "stats": {
+   "view_count": null,
+   "like_count": 3341,
+   "comment_count": 21,
+   "timestamp": 1795360083
+  },
+  "score": 6.5,
+  "queue": 12
  },
  {
   "n": 5,
@@ -45,7 +55,9 @@
   "day": "Nov 23",
   "posted": false,
   "file": "videos/005-DgC-tOhRNed.mp4",
-  "creator": "kotov.plays"
+  "creator": "kotov.plays",
+  "score": 6.5,
+  "queue": 13
  },
  {
   "n": 6,
@@ -54,7 +66,15 @@
   "day": "Nov 23",
   "posted": false,
   "file": "videos/006-DgApPPXNJOl.mp4",
-  "creator": "mqlisq"
+  "creator": "mqlisq",
+  "stats": {
+   "view_count": null,
+   "like_count": 215639,
+   "comment_count": 920,
+   "timestamp": 1795278033
+  },
+  "score": 6.5,
+  "queue": 14
  },
  {
   "n": 7,
@@ -63,7 +83,15 @@
   "day": "Nov 23",
   "posted": false,
   "file": "videos/007-Df9-YipuwLT.mp4",
-  "creator": "adam.asenko"
+  "creator": "adam.asenko",
+  "stats": {
+   "view_count": null,
+   "like_count": 106724,
+   "comment_count": 271,
+   "timestamp": 1795188435
+  },
+  "score": 7.0,
+  "queue": 10
  },
  {
   "n": 8,
@@ -72,7 +100,9 @@
   "day": "Nov 23",
   "posted": false,
   "file": "videos/008-Df9DftFucqF.mp4",
-  "creator": "imnotgdub"
+  "creator": "imnotgdub",
+  "score": 6.5,
+  "queue": 15
  },
  {
   "n": 9,
@@ -81,7 +111,15 @@
   "day": "Nov 23",
   "posted": false,
   "file": "videos/009-DgA8at8xlP6.mp4",
-  "creator": "sergeev_sergey_s"
+  "creator": "sergeev_sergey_s",
+  "stats": {
+   "view_count": null,
+   "like_count": 21845,
+   "comment_count": 191,
+   "timestamp": 1795288068
+  },
+  "score": 8.5,
+  "queue": 1
  },
  {
   "n": 10,
@@ -90,7 +128,15 @@
   "day": "Nov 23",
   "posted": false,
   "file": "videos/010-DgBZMo2Mm59.mp4",
-  "creator": "nyrohimself1"
+  "creator": "nyrohimself1",
+  "stats": {
+   "view_count": null,
+   "like_count": 25828,
+   "comment_count": 118,
+   "timestamp": 1795303243
+  },
+  "score": 8.0,
+  "queue": 6
  },
  {
   "n": 11,
@@ -99,7 +145,15 @@
   "day": "Nov 23",
   "posted": false,
   "file": "videos/011-DgCrmZnILE3.mp4",
-  "creator": "prixyhd21"
+  "creator": "prixyhd21",
+  "stats": {
+   "view_count": null,
+   "like_count": 80936,
+   "comment_count": 291,
+   "timestamp": 1795346490
+  },
+  "score": 7.5,
+  "queue": 9
  },
  {
   "n": 12,
@@ -108,7 +162,15 @@
   "day": "Nov 23",
   "posted": false,
   "file": "videos/012-DgD3GHqTkqT.mp4",
-  "creator": "lifeinmotion.ig"
+  "creator": "lifeinmotion.ig",
+  "stats": {
+   "view_count": null,
+   "like_count": 18616,
+   "comment_count": 102,
+   "timestamp": 1795385925
+  },
+  "score": 8.5,
+  "queue": 2
  },
  {
   "n": 13,
@@ -117,7 +179,9 @@
   "day": "Nov 23",
   "posted": false,
   "file": "videos/013-DgCjI63OH_r.mp4",
-  "creator": "arccreepy21"
+  "creator": "arccreepy21",
+  "score": 6.5,
+  "queue": 16
  },
  {
   "n": 14,
@@ -126,7 +190,9 @@
   "day": "Nov 23",
   "posted": false,
   "file": "videos/014-DgEkExwTvII.mp4",
-  "creator": "arccreepy21"
+  "creator": "arccreepy21",
+  "score": 6.5,
+  "queue": 17
  },
  {
   "n": 15,
@@ -135,7 +201,15 @@
   "day": "Nov 23",
   "posted": false,
   "file": "videos/015-DgC-q21oclx.mp4",
-  "creator": "grandtheftfocus"
+  "creator": "grandtheftfocus",
+  "stats": {
+   "view_count": null,
+   "like_count": 872332,
+   "comment_count": 10027,
+   "timestamp": 1795356467
+  },
+  "score": 5.5,
+  "queue": 24
  },
  {
   "n": 16,
@@ -144,7 +218,15 @@
   "day": "Nov 23",
   "posted": false,
   "file": "videos/016-DgCVKlvoZs6.mp4",
-  "creator": "skulker_z"
+  "creator": "skulker_z",
+  "stats": {
+   "view_count": null,
+   "like_count": 65574,
+   "comment_count": 933,
+   "timestamp": 1795334638
+  },
+  "score": 8.5,
+  "queue": 3
  },
  {
   "n": 17,
@@ -153,7 +235,15 @@
   "day": "Nov 23",
   "posted": false,
   "file": "videos/017-DgFNmQTOjO4.mp4",
-  "creator": "arccreepy21"
+  "creator": "arccreepy21",
+  "stats": {
+   "view_count": null,
+   "like_count": 117431,
+   "comment_count": 376,
+   "timestamp": 1795431411
+  },
+  "score": 8.0,
+  "queue": 7
  },
  {
   "n": 18,
@@ -162,7 +252,9 @@
   "day": "Nov 24",
   "posted": false,
   "file": "videos/018-DgHfNBGok1b.mp4",
-  "creator": "sitygta"
+  "creator": "sitygta",
+  "score": 6.5,
+  "queue": 18
  },
  {
   "n": 19,
@@ -171,7 +263,9 @@
   "day": "Nov 24",
   "posted": false,
   "file": "videos/019-DgG0fNeSua1.mp4",
-  "creator": "rawvicecity"
+  "creator": "rawvicecity",
+  "score": 6.5,
+  "queue": 19
  },
  {
   "n": 20,
@@ -180,7 +274,9 @@
   "day": "Nov 24",
   "posted": false,
   "file": "videos/020-DgG0gCHNN94.mp4",
-  "creator": "zoro.snipes"
+  "creator": "zoro.snipes",
+  "score": 6.5,
+  "queue": 20
  },
  {
   "n": 21,
@@ -189,7 +285,9 @@
   "day": "Nov 24",
   "posted": false,
   "file": "videos/021-DgGmgcrta56.mp4",
-  "creator": "motmus"
+  "creator": "motmus",
+  "score": 6.5,
+  "queue": 21
  },
  {
   "n": 22,
@@ -198,7 +296,15 @@
   "day": "Nov 24",
   "posted": false,
   "file": "videos/022-DgHJdT_OXlD.mp4",
-  "creator": "arccreepy21"
+  "creator": "arccreepy21",
+  "stats": {
+   "view_count": null,
+   "like_count": 153987,
+   "comment_count": 459,
+   "timestamp": 1795496237
+  },
+  "score": 8.5,
+  "queue": 4
  },
  {
   "n": 23,
@@ -207,7 +313,9 @@
   "day": "Nov 24",
   "posted": false,
   "file": "videos/023-DgITUXxxYmW.mp4",
-  "creator": "triigzyt"
+  "creator": "triigzyt",
+  "score": 6.5,
+  "queue": 22
  },
  {
   "n": 24,
@@ -216,7 +324,15 @@
   "day": "Nov 24",
   "posted": false,
   "file": "videos/024-DgGBs-DvO7i.mp4",
-  "creator": "gamewithtoro"
+  "creator": "gamewithtoro",
+  "stats": {
+   "view_count": null,
+   "like_count": 78231,
+   "comment_count": 253,
+   "timestamp": 1795458678
+  },
+  "score": 8.0,
+  "queue": 8
  },
  {
   "n": 25,
@@ -225,7 +341,15 @@
   "day": "Nov 24",
   "posted": false,
   "file": "videos/025-DgIGCyKo-wi.mp4",
-  "creator": "dolphin.8612657"
+  "creator": "dolphin.8612657",
+  "stats": {
+   "view_count": null,
+   "like_count": 168835,
+   "comment_count": 645,
+   "timestamp": 1795528043
+  },
+  "score": 8.5,
+  "queue": 5
  },
  {
   "n": 26,
@@ -234,6 +358,8 @@
   "day": "Nov 24",
   "posted": false,
   "file": "videos/026-DgItItsq4fM.mp4",
-  "creator": "sleepy_gamer4.0"
+  "creator": "sleepy_gamer4.0",
+  "score": 6.5,
+  "queue": 23
  }
 ]

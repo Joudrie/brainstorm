@@ -76,14 +76,22 @@ def main():
         targets = [r for r in reels if r["n"] == n]
     else:
         k = int(args[args.index("--next") + 1]) if "--next" in args else 1
-        targets = [r for r in reels if not r.get("posted") and r.get("file")][:k]
+        queue = sorted([r for r in reels if not r.get("posted") and r.get("file")],
+                       key=lambda r: (r.get("queue", 10**6), r["n"]))
+        targets = queue[:k]
     if not targets:
         print("Nothing to post."); return
     for r in targets:
         if not r.get("file"):
             print(f"#{r['n']}: no video downloaded yet, skipping"); continue
-        link = post(r, dry)
+        try:
+            link = post(r, dry)
+        except Exception as e:
+            r["postError"] = str(e)[:300]
+            DATA.write_text(json.dumps(reels, indent=1) + "\n")
+            print(f"#{r['n']} FAILED: {e}"); continue
         if not dry:
+            r.pop("postError", None)
             r["posted"] = True
             r["postedAt"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
             r["postUrl"] = link

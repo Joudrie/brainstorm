@@ -17,6 +17,8 @@
   --teal-soft: #dcf2f0;
   --amber: #a86300;       /* copied, not posted yet */
   --amber-soft: #fbeed8;
+  --red: #c0262d;
+  --red-soft: #fde2e2;
   --font-display: "Space Grotesk", system-ui, sans-serif;
   --font-body: "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
@@ -24,11 +26,11 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #15121b; --surface: #1f1b27; --fg: #f1edf6; --muted: #a39cb0; --line: #332d3e;
   --accent: #ff4fa3; --accent-fg: #1a0b13; --teal: #3fd3c9; --teal-soft: #12322f;
-  --amber: #f2b15a; --amber-soft: #3a2a12; color-scheme: dark; } }
+  --amber: #f2b15a; --amber-soft: #3a2a12; --red: #ff6b6b; --red-soft: #3d1517; color-scheme: dark; } }
 :root[data-theme="dark"] {
   --bg: #15121b; --surface: #1f1b27; --fg: #f1edf6; --muted: #a39cb0; --line: #332d3e;
   --accent: #ff4fa3; --accent-fg: #1a0b13; --teal: #3fd3c9; --teal-soft: #12322f;
-  --amber: #f2b15a; --amber-soft: #3a2a12; color-scheme: dark; }
+  --amber: #f2b15a; --amber-soft: #3a2a12; --red: #ff6b6b; --red-soft: #3d1517; color-scheme: dark; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; } body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
@@ -56,7 +58,14 @@ main { display: grid; gap: 10px; padding-top: 14px; }
 .reel .actions { grid-template-columns: 1fr; }
 .reel .btn { min-height: 40px; }
 @media (min-width: 560px) { .reel .actions { grid-template-columns: repeat(3, 1fr); } }
-.reel.posted { opacity: 0.62; }
+@media (max-width: 559px) { .reel .code { display: none; } .reel .top { flex-wrap: wrap; } }
+.reel.posted { border-color: var(--teal); background: color-mix(in srgb, var(--teal-soft) 55%, var(--surface)); }
+.reel.failed { border-color: var(--red); background: color-mix(in srgb, var(--red-soft) 55%, var(--surface)); }
+.sortlbl { font-size: 0.8rem; color: var(--muted); align-self: center; margin-left: 6px; }
+.score { font: 600 0.72rem var(--font-body); padding: 3px 8px; border-radius: 99px; background: var(--line); color: var(--fg); flex: none; font-variant-numeric: tabular-nums; }
+.qpos { font: 700 0.72rem var(--font-body); color: var(--accent); flex: none; }
+.pill.failed { background: var(--red-soft); color: var(--red); }
+.errmsg { font-size: 0.78rem; color: var(--red); margin: 0; overflow-wrap: anywhere; }
 .top { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .num { font: 700 1.05rem var(--font-display); width: 2.2ch; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); flex: none; }
 .code { font: 500 0.9rem var(--font-mono); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
@@ -102,6 +111,9 @@ textarea { min-height: 120px; resize: vertical; }
       <button class="tab" id="tab-todo" data-f="todo" aria-pressed="true">To post</button>
       <button class="tab" id="tab-posted" data-f="posted" aria-pressed="false">Posted</button>
       <button class="tab" id="tab-all" data-f="all" aria-pressed="false">All</button>
+      <span class="sortlbl">Sort:</span>
+      <button class="tab" id="sort-queue" data-s="queue" aria-pressed="true">Posting order</button>
+      <button class="tab" id="sort-added" data-s="added" aria-pressed="false">Recently added</button>
     </div>
   </header>
 
@@ -133,6 +145,7 @@ textarea { min-height: 120px; resize: vertical; }
   let reels = [];      // from reels.json + local extras
   let local = { status: {}, extra: [], downloader: "" };
   let filter = "todo";
+  let sortBy = "queue";
   const previews = new Map();   // keep embeds loaded across re-renders
   // Shared checkmarks live in this Google Sheet (column A = Posted, column D = reel link).
   const SHEET_ID = "19SF_3lNtmRRNqh2UCR45i4oW102ulEhaHyp540BOyhc";
@@ -201,18 +214,21 @@ textarea { min-height: 120px; resize: vertical; }
     const posted = reels.filter(r => statusOf(r) === "posted").length;
     $("count").textContent = reels.length ? `${posted} / ${reels.length} posted` : "No reels yet";
     $("barFill").style.width = reels.length ? (100 * posted / reels.length) + "%" : "0";
-    document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.f === filter)));
+    document.querySelectorAll("[data-f]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.f === filter)));
     const list = $("list"); list.textContent = "";
     const shown = reels.filter(r => filter === "all" || (filter === "posted" ? statusOf(r) === "posted" : statusOf(r) !== "posted"));
+    if (sortBy === "queue") shown.sort((a, b) => (statusOf(a) === "posted") - (statusOf(b) === "posted") || (a.queue ?? 1e6) - (b.queue ?? 1e6) || a.n - b.n);
+    else shown.sort((a, b) => b.n - a.n);
+    document.querySelectorAll("[data-s]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.s === sortBy)));
     if (!shown.length) {
       list.appendChild(el("p", "empty", reels.length ? (filter === "todo" ? "All caught up. Paste a new batch below." : "Nothing posted yet.") : "No reels yet."));
       return;
     }
     let lastDay = null;
     for (const r of shown) {
-      if (r.day && r.day !== lastDay) { list.appendChild(el("div", "day", r.day)); lastDay = r.day; }
+      if (sortBy === "added" && r.day && r.day !== lastDay) { list.appendChild(el("div", "day", r.day)); lastDay = r.day; }
       const st = statusOf(r);
-      const card = el("div", "reel" + (st === "posted" ? " posted" : ""));
+      const card = el("div", "reel" + (st === "posted" ? " posted" : r.postError ? " failed" : ""));
       let pv = previews.get(r.id);
       if (!pv) {
         pv = document.createElement("a");
@@ -231,7 +247,10 @@ textarea { min-height: 120px; resize: vertical; }
       top.appendChild(el("span", "num", String(r.n)));
       const code = el("span", "code"); const a = el("a", null, r.id);
       a.href = r.url; a.target = "_blank"; a.rel = "noopener"; code.appendChild(a); top.appendChild(code);
-      top.appendChild(el("span", "pill " + st, st === "todo" ? "To do" : st === "copied" ? "Copied" : "Posted"));
+      if (st !== "posted" && r.queue) top.appendChild(el("span", "qpos", r.queue === 1 ? "Next up" : "#" + r.queue + " in line"));
+      if (st !== "posted" && typeof r.score === "number") top.appendChild(el("span", "score", r.score.toFixed(1) + "/10"));
+      if (r.postError && st !== "posted") top.appendChild(el("span", "pill failed", "Error"));
+      else top.appendChild(el("span", "pill " + st, st === "todo" ? "To do" : st === "copied" ? "Copied" : "Posted"));
       side.appendChild(top);
       if (r.creator || r.caption) {
         const cap = el("p", "cap"); const b = el("b", null, "Caption: ");
@@ -239,6 +258,7 @@ textarea { min-height: 120px; resize: vertical; }
         cap.appendChild(document.createTextNode(r.caption || (r.creator ? `🎥 @${r.creator}  #gta6 #gtavi #vicecity #gta #gaming` : "")));
         side.appendChild(cap);
       }
+      if (r.postError && st !== "posted") side.appendChild(el("p", "errmsg", "Posting failed: " + r.postError));
       if (r.postUrl && /^https:\/\//.test(r.postUrl)) {
         const pl = el("a", "cap", "View post on Instagram ↗"); pl.href = r.postUrl; pl.target = "_blank"; pl.rel = "noopener";
         side.appendChild(pl);
@@ -275,7 +295,8 @@ textarea { min-height: 120px; resize: vertical; }
     }
   }
 
-  document.querySelectorAll(".tab").forEach(b => b.onclick = () => { filter = b.dataset.f; render(); });
+  document.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { filter = b.dataset.f; render(); });
+  document.querySelectorAll("[data-s]").forEach(b => b.onclick = () => { sortBy = b.dataset.s; render(); });
   $("addBtn").onclick = () => {
     const ids = [...$("pasteIn").value.matchAll(/instagram\.com\/(?:reel|reels|p)\/([A-Za-z0-9_-]+)/g)].map(m => m[1]);
     const have = new Set(reels.map(r => r.id));
