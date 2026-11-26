@@ -34,7 +34,7 @@ def main():
         cmd = ["ffmpeg", "-v", "error", "-y", "-ss", t, "-i", src, "-frames:v", "1", "-vf", vf(src), dst]
     else:
         cmd = ["ffmpeg", "-v", "error", "-y", "-i", src, "-vf", vf(src), "-c:v", "libx264", "-preset", "veryfast",
-               "-crf", "20", "-c:a", "aac", "-ar", "44100", "-ac", "2", "-b:a", "128k", "-movflags", "+faststart", dst]
+               "-crf", "25", "-maxrate", "5M", "-bufsize", "10M", "-c:a", "aac", "-ar", "44100", "-ac", "2", "-b:a", "128k", "-movflags", "+faststart", dst]
     subprocess.run(cmd, check=True)
 
 
