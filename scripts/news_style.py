@@ -3,7 +3,7 @@
 
   python3 scripts/news_style.py IN.mp4 OUT.mp4 --headline "GATOR SPOTTED IN LEONIDA" \
       --place LEONIDA --text "gator just chilling" --emoji "🐊" \
-      [--blur X,Y,W,H[,T0,T1]] ... [--text-y Y] [--no-mirror]
+      [--blur X,Y,W,H[,T0,T1]] ... [--text-y Y] [--rows TOP,BOTTOM] [--no-mirror]
 
 --blur boxes and --text-y are in the input video's pixel coordinates (1080x1920).
 A blur box with T0,T1 is only blurred between those seconds (for text that pops up mid-clip).
@@ -46,14 +46,15 @@ def fit_text(d, text, size, max_w):
 def draw_text_emoji(img, cy, text, emoji, size=70):
     d = ImageDraw.Draw(img)
     eh = int(size * 0.95) if emoji else 0
-    size = fit_text(d, text, size, W - 80 - (eh + 14 if emoji else 0))
+    ew = eh * max(1, len([c for c in emoji if ord(c) > 0x2000 and c not in "\u200d\ufe0f"])) if emoji else 0
+    size = fit_text(d, text, size, W - 80 - (ew + 14 if emoji else 0))
     f = font(size); tw = d.textlength(text, font=f)
-    total = tw + (14 + eh if emoji else 0); x0 = (W - total) / 2
+    total = tw + (14 + ew if emoji else 0); x0 = (W - total) / 2
     d.text((x0, cy), text, font=f, fill="white", anchor="lm", stroke_width=5, stroke_fill=(10, 10, 15))
     if emoji:
-        em = Image.new("RGBA", (160, 160), (0, 0, 0, 0))
+        em = Image.new("RGBA", (400, 160), (0, 0, 0, 0))
         ImageDraw.Draw(em).text((0, 0), emoji, font=ImageFont.truetype(EMOJI, 109), embedded_color=True)
-        em = em.crop(em.getbbox()).resize((eh, eh), Image.LANCZOS)
+        em = em.crop(em.getbbox()); em = em.resize((int(em.width * eh / em.height), eh), Image.LANCZOS)
         img.alpha_composite(em, (int(x0 + tw + 14), int(cy - eh / 2)))
 
 
@@ -95,10 +96,11 @@ def main():
     p.add_argument("--text", default=""); p.add_argument("--emoji", default="")
     p.add_argument("--blur", action="append", default=[]); p.add_argument("--text-y", type=int)
     p.add_argument("--no-mirror", action="store_true")
+    p.add_argument("--rows", help="TOP,BOTTOM rows of the gameplay picture, to crop off a creator's caption bar")
     a = p.parse_args()
 
     cube, ticker = ensure_assets()
-    top, bot = gameplay_rows(a.src)
+    top, bot = map(int, a.rows.split(",")) if a.rows else gameplay_rows(a.src)
     gh = bot - top
     avail = LOWER_Y - TOP_BAR[1]
     if gh > avail:                                   # tall clip: keep the middle
