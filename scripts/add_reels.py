@@ -46,6 +46,9 @@ def main():
     links = find_links(sys.stdin.read())
     reels = json.loads(DATA.read_text())
     have = {r["id"] for r in reels}
+    # never re-add our own posts (e.g. a link to @vicecitytop's reel shared back into the chat)
+    have |= {re.search(r"/reel/([A-Za-z0-9_-]+)", r["postUrl"]).group(1) for r in reels
+             if r.get("postUrl") and re.search(r"/reel/([A-Za-z0-9_-]+)", r["postUrl"])}
     n = max((r["n"] for r in reels), default=0)
     added = 0
     for rid, url, source in links:
