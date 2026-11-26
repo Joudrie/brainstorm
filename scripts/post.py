@@ -45,7 +45,7 @@ def call(method, path, params=None):
 
 
 def post(r, dry=False):
-    video_url = SITE + (r.get("edited") or r["file"])   # graded/zoomed version when available
+    video_url = SITE + (r.get("news") or r.get("edited") or r["file"])   # news-style > graded > original
     cap = caption_for(r)
     print(f"#{r['n']} -> {video_url}\n--- caption ---\n{cap}\n---------------")
     if dry:
